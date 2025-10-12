@@ -1,3 +1,4 @@
+# Handle all the food waste reduction functionality including pantry management, shopping lists, recipes, and waste tracking
 from django.db import models
 from accounts.models import UserAccount
 
@@ -45,6 +46,7 @@ class Ingredient(models.Model):
     def __str__(self):
         return self.name
 
+# Tracks quantity and status of ingredients that a user has in their pantry (pantry==fridge+cupboard)
 class UserPantry(models.Model):
     STATUS_CHOICES = [
         ('active', 'Active'),
@@ -104,7 +106,9 @@ class Recipe(models.Model):
         ('HARD', 'Hard'),
     ]
     
+    # More cuisines can be added based on target user base
     CUISINE_CHOICES = [
+        ('kenyan', 'Kenyan'),
         ('italian', 'Italian'),
         ('mexican', 'Mexican'),
         ('asian', 'Asian'),
@@ -201,7 +205,8 @@ class ShoppingList(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.name} - {self.created_at.date()}"
-
+ 
+# Items within a shopping list
 class ShoppingListItem(models.Model):
     PRIORITY_CHOICES = [
         ('high', 'High Priority'),
@@ -212,7 +217,7 @@ class ShoppingListItem(models.Model):
     shopping_list = models.ForeignKey(ShoppingList, on_delete=models.CASCADE, related_name='items')
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     quantity = models.FloatField()
-    unit = models.CharField(max_length=20)
+    unit = models.CharField(max_length=20) # e.g., g, kg, pieces, ml
     estimated_price = models.DecimalField(max_digits=8, decimal_places=2)
     actual_price = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
@@ -246,6 +251,7 @@ class FoodWasteRecord(models.Model):
     reason = models.CharField(max_length=50, choices=WASTE_REASONS)
     reason_details = models.TextField(blank=True)
     
+    # dates to track when it was purchased, expiry date, and when it was wasted
     purchase_date = models.DateField()
     expiry_date = models.DateField()
     waste_date = models.DateField(auto_now_add=True)

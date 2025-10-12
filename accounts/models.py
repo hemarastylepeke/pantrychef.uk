@@ -111,6 +111,7 @@ class UserGoal(models.Model):
     target_date = models.DateField(null=True, blank=True)
     active = models.BooleanField(default=True)
     priority = models.IntegerField(default=1, help_text="1-5, with 5 being highest priority")
+    bmi = models.FloatField(null=True, blank=True, help_text="Body Mass Index") # To be calculated based on height and weight to keep track of health
     
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -128,8 +129,7 @@ class Budget(models.Model):
         ('USD', 'USD'),
         ('EUR', 'EUR'),
         ('GBP', 'GBP'),
-
-
+        
     ]
     
     user = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
