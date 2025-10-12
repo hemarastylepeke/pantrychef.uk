@@ -101,6 +101,17 @@ DATABASES = {
 #     }
 # }
 
+# # Redis cache configuration for production deployment
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": config("REDIS_URL"),
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#         },
+#     }
+# }
+
 # AWS credentials and configuration for the application
 # AWS_ACCESS_KEY_ID= config('AWS_ACCESS_KEY_ID')
 # AWS_REGION_ENDPOINT= config('AWS_REGION_ENDPOINT')
@@ -111,6 +122,9 @@ DATABASES = {
 # AWS_DEFAULT_ACL = None
 # AWS_S3_VERITY = config('AWS_S3_VERITY', default='True')
 # AWS_S3_FILE_OVERWRITE = config('AWS_S3_FILE_OVERWRITE', default='False')
+
+# For development, using console email backend
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # # Email configuration
 # EMAIL_BACKEND = config('EMAIL_BACKEND')
@@ -132,6 +146,9 @@ STORAGES = {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
 }
+
+# Trusted origins
+CSRF_TRUSTED_ORIGINS = []
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -203,7 +220,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Redirect settings
-# LOGIN_REDIRECT_URL = '//'
+LOGIN_REDIRECT_URL = '/accounts/logout/'
 LOGIN_URL = '/accounts/login/'
 ACCOUNT_SIGNUP_REDIRECT_URL = '/accounts/login/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'  
@@ -215,8 +232,3 @@ ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGOUT_ON_GET = True
 
-# Email settings
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# Trusted origins
-CSRF_TRUSTED_ORIGINS = []
