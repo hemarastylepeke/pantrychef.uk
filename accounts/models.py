@@ -123,10 +123,13 @@ class Budget(models.Model):
         ('MONTHLY', 'Monthly'),
     ]
     
+    # More currencies can be added based on target user base
     CURRENCY_CHOICES = [
         ('USD', 'USD'),
         ('EUR', 'EUR'),
         ('GBP', 'GBP'),
+
+
     ]
     
     user = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
