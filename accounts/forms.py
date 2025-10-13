@@ -4,6 +4,7 @@ from django.contrib import messages
 from allauth.account.forms import LoginForm
 from django.contrib.auth import authenticate
 from allauth.core.exceptions import ImmediateHttpResponse
+from django.utils import timezone
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
@@ -204,7 +205,7 @@ class UserGoalForm(forms.ModelForm):
         
         # Validate target date
         if target_date:
-            from django.utils import timezone
+           
             if target_date < timezone.now().date():
                 raise forms.ValidationError({
                     'target_date': 'Target date cannot be in the past'

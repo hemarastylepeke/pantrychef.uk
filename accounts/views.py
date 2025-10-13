@@ -4,6 +4,7 @@ from django.contrib import messages
 from .models import UserProfile, UserGoal, Budget
 from .forms import UserProfileForm, DietaryRequirementsForm, UserGoalForm, BudgetForm, PreferencesForm
 from django.http import JsonResponse
+from django.utils import timezone
 
 @login_required(login_url='account_login')
 def profile_page_view(request):
@@ -13,40 +14,41 @@ def profile_page_view(request):
     # Get or create user profile
     profile, created = UserProfile.objects.get_or_create(user=request.user)
     
-    # Get related data
+    # Related data
     goals = UserGoal.objects.filter(user=request.user, active=True)
     current_budget = Budget.objects.filter(user=request.user, active=True).first()
     budget_history = Budget.objects.filter(user=request.user).order_by('-created_at')[:5]
     
-    # Handle profile form submission
+    # Default form instances
     profile_form = UserProfileForm(instance=profile)
     dietary_form = DietaryRequirementsForm(instance=profile)
     goal_form = UserGoalForm()
     budget_form = BudgetForm(instance=current_budget) if current_budget else BudgetForm()
     preferences_form = PreferencesForm(instance=profile)
     
+    # Handle POST requests
     if request.method == 'POST':
-        # Determine which form was submitted
         form_type = request.POST.get('form_type')
-        
+
+        # Profile update
         if form_type == 'profile':
             profile_form = UserProfileForm(request.POST, request.FILES, instance=profile)
             if profile_form.is_valid():
                 profile_form.save()
                 messages.success(request, 'Profile updated successfully!')
                 return redirect('profile_page')
-            else:
-                messages.error(request, 'Please correct the errors in the profile form.')
-                
+            messages.error(request, 'Please correct the errors in the profile form.')
+
+        # Dietary requirements
         elif form_type == 'dietary':
             dietary_form = DietaryRequirementsForm(request.POST, instance=profile)
             if dietary_form.is_valid():
                 dietary_form.save()
                 messages.success(request, 'Dietary requirements updated successfully!')
                 return redirect('profile_page')
-            else:
-                messages.error(request, 'Please correct the errors in the dietary requirements form.')
-                
+            messages.error(request, 'Please correct the errors in the dietary requirements form.')
+
+        # Goal creation
         elif form_type == 'goal':
             goal_form = UserGoalForm(request.POST)
             if goal_form.is_valid():
@@ -55,36 +57,36 @@ def profile_page_view(request):
                 goal.save()
                 messages.success(request, 'Goal added successfully!')
                 return redirect('profile_page')
-            else:
-                messages.error(request, 'Please correct the errors in the goal form.')
-                
+            messages.error(request, 'Please correct the errors in the goal form.')
+
+        # --- Budget creation/update ---
         elif form_type == 'budget':
-            # Deactivate current budget if exists
+            # Deactivate existing active budget
             if current_budget:
                 current_budget.active = False
                 current_budget.save()
-                
+
             budget_form = BudgetForm(request.POST)
             if budget_form.is_valid():
                 budget = budget_form.save(commit=False)
                 budget.user = request.user
                 budget.active = True
+                budget.start_date = timezone.now() # Set start date to now
                 budget.save()
                 messages.success(request, 'Budget set successfully!')
                 return redirect('profile_page')
-            else:
-                messages.error(request, 'Please correct the errors in the budget form.')
-                
+            messages.error(request, 'Please correct the errors in the budget form.')
+
+        # --- Preferences update ---
         elif form_type == 'preferences':
             preferences_form = PreferencesForm(request.POST, instance=profile)
             if preferences_form.is_valid():
                 preferences_form.save()
                 messages.success(request, 'Preferences updated successfully!')
                 return redirect('profile_page')
-            else:
-                messages.error(request, 'Please correct the errors in the preferences form.')
+            messages.error(request, 'Please correct the errors in the preferences form.')
     
-    # Prepare dietary data for template
+    # Dietary data for template
     dietary_data = {
         'allergies': profile.allergies or [],
         'restrictions': profile.dietary_restrictions or [],
@@ -98,7 +100,7 @@ def profile_page_view(request):
         'current_budget': current_budget,
         'budget_history': budget_history,
         'dietary_data': dietary_data,
-        
+
         # Forms
         'profile_form': profile_form,
         'dietary_form': dietary_form,
@@ -108,6 +110,7 @@ def profile_page_view(request):
     }
     
     return render(request, 'account/profile.html', context)
+
 
 @login_required(login_url='account_login')
 def edit_goal_view(request, goal_id):

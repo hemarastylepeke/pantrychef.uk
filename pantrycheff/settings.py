@@ -220,7 +220,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Redirect settings
-LOGIN_REDIRECT_URL = '/accounts/logout/'
+LOGIN_REDIRECT_URL = '/accounts/profile/'
 LOGIN_URL = '/accounts/login/'
 ACCOUNT_SIGNUP_REDIRECT_URL = '/accounts/login/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'  
