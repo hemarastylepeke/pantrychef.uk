@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Manual Ingredient - PantryChef</title>
+</head>
+<body>
+    <header>
+        <h1>Add Manual Ingredient</h1>
+        <nav>
+            <a href="{% url 'pantry_dashboard' %}">Back to Pantry</a>
+        </nav>
+    </header>
+
+    <main>
+        <form method="post">
+            {% csrf_token %}
+            
+            <div>
+                <label>Ingredient Name:</label>
+                {{ form.name }}
+            </div>
+
+            <div>
+                <label>Custom Name (optional):</label>
+                {{ form.custom_name }}
+            </div>
+
+            <div>
+                <label>Category:</label>
+                {{ form.category }}
+            </div>
+
+            <div>
+                <label>Quantity:</label>
+                {{ form.quantity }}
+            </div>
+
+            <div>
+                <label>Unit:</label>
+                {{ form.unit }}
+            </div>
+
+            <div>
+                <label>Purchase Date:</label>
+                {{ form.purchase_date }}
+            </div>
+
+            <div>
+                <label>Expiry Date:</label>
+                {{ form.expiry_date }}
+            </div>
+
+            <div>
+                <label>Price (optional):</label>
+                {{ form.price }}
+            </div>
+
+            <div>
+                <label>Typical Expiry Days (optional):</label>
+                {{ form.typical_expiry_days }}
+            </div>
+
+            <button type="submit">Add to Pantry</button>
+        </form>
+    </main>
+</body>
+</html>

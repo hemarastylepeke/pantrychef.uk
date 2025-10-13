@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Pantry - PantryChef</title>
+</head>
+<body>
+    <header>
+        <h1>My Pantry</h1>
+        <nav>
+            <a href="{% url 'profile_page' %}">Profile</a>
+            <a href="{% url 'pantry_dashboard' %}">Pantry</a>
+            <a href="">Recipes</a>
+            <a href="">Shopping</a>
+        </nav>
+    </header>
+
+    <main>
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <section>
+            <h2>Quick Actions</h2>
+            <div>
+                <a href="{% url 'add_pantry_item' %}">Add Item</a>
+                <a href="{% url 'add_manual_ingredient' %}">Add Manual Item</a>
+                <a href="{% url 'scan_ingredient' %}">Scan Item</a>
+                <a href="{% url 'pantry_analytics' %}">View Analytics</a>
+            </div>
+        </section>
+
+        <!-- Alerts Section -->
+        <section>
+            <h2>Alerts</h2>
+            
+            <!-- Expiring Soon -->
+            {% if expiring_soon %}
+            <div>
+                <h3>Expiring Soon (Next 3 Days)</h3>
+                <ul>
+                    {% for item in expiring_soon %}
+                    <li>
+                        {{ item.ingredient.name }} - Expires: {{ item.expiry_date }}
+                        <a href="{% url 'core:log_consumption' item.id %}">Use</a>
+                        <a href="{% url 'core:record_waste' item.id %}">Mark Waste</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Expired Items -->
+            {% if expired_items %}
+            <div>
+                <h3>Expired Items</h3>
+                <ul>
+                    {% for item in expired_items %}
+                    <li>
+                        {{ item.ingredient.name }} - Expired: {{ item.expiry_date }}
+                        <a href="{% url 'core:record_waste' item.id %}">Record Waste</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Pantry Inventory -->
+        <section>
+            <h2>Current Inventory</h2>
+            <p>Total Items: {{ total_items }} | Estimated Value: ${{ total_value }}</p>
+            
+            {% if pantry_items %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Purchased</th>
+                        <th>Expires</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in pantry_items %}
+                    <tr>
+                        <td>
+                            {% if item.custom_name %}
+                                {{ item.custom_name }} ({{ item.ingredient.name }})
+                            {% else %}
+                                {{ item.ingredient.name }}
+                            {% endif %}
+                        </td>
+                        <td>{{ item.quantity }} {{ item.unit }}</td>
+                        <td>{{ item.purchase_date }}</td>
+                        <td>{{ item.expiry_date }}</td>
+                        <td>${{ item.price|default:"0.00" }}</td>
+                        <td>
+                            <a href="{% url 'core:edit_pantry_item' item.id %}">Edit</a>
+                            <a href="{% url 'core:log_consumption' item.id %}">Use</a>
+                            <a href="{% url 'core:record_waste' item.id %}">Waste</a>
+                            <a href="{% url 'core:delete_pantry_item' item.id %}">Remove</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>Your pantry is empty. Add some items to get started!</p>
+            {% endif %}
+        </section>
+
+        <!-- Recent Consumption -->
+        <section>
+            <h2>Recent Consumption</h2>
+            {% if recent_consumption %}
+            <ul>
+                {% for consumption in recent_consumption %}
+                <li>
+                    {{ consumption.quantity_used }} {{ consumption.pantry_item.unit }} 
+                    of {{ consumption.pantry_item.ingredient.name }}
+                    on {{ consumption.date_consumed }}
+                    {% if consumption.recipe %} - Used in: {{ consumption.recipe.name }}{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No recent consumption recorded.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <script>
+        function updateQuantity(itemId, newQuantity) {
+            fetch(`/core/pantry/${itemId}/update-quantity/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: `quantity=${newQuantity}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Quantity updated!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+        }
+
+        function quickConsume(itemId) {
+            if (confirm('Mark this item as fully consumed?')) {
+                fetch(`/core/pantry/${itemId}/quick-consume/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': getCSRFToken()
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    }
+                });
+            }
+        }
+
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+    </script>
+</body>
+</html>

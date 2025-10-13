@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scan Ingredient - PantryChef</title>
+</head>
+<body>
+    <header>
+        <h1>Scan Ingredient</h1>
+        <nav>
+            <a href="{% url 'pantry_dashboard' %}">Back to Pantry</a>
+        </nav>
+    </header>
+
+    <main>
+        <div>
+            <h2>Scan Expiry Date or Ingredient</h2>
+            
+            <form id="scan-form" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div>
+                    <label>Upload Image:</label>
+                    <input type="file" name="image" accept="image/*" required>
+                </div>
+                <button type="button" onclick="processImage()">Scan Image</button>
+            </form>
+
+            <div id="scan-results" style="display: none;">
+                <h3>Scan Results</h3>
+                <div id="results-content"></div>
+                <button onclick="addScannedItem()">Add to Pantry</button>
+            </div>
+
+            <div id="scan-error" style="display: none; color: red;">
+                <p>Error processing image. Please try again.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function processImage() {
+            const form = document.getElementById('scan-form');
+            const formData = new FormData(form);
+            
+            fetch('/core/pantry/scan/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('scan-results').style.display = 'block';
+                    document.getElementById('scan-error').style.display = 'none';
+                    
+                    const results = data.result;
+                    let html = '<p><strong>Detected Text:</strong> ' + results.detected_text + '</p>';
+                    if (results.expiry_date) {
+                        html += '<p><strong>Expiry Date:</strong> ' + results.expiry_date + '</p>';
+                    }
+                    html += '<p><strong>Confidence:</strong> ' + (results.confidence * 100).toFixed(1) + '%</p>';
+                    
+                    document.getElementById('results-content').innerHTML = html;
+                } else {
+                    document.getElementById('scan-error').style.display = 'block';
+                    document.getElementById('scan-results').style.display = 'none';
+                }
+            })
+            .catch(error => {
+                document.getElementById('scan-error').style.display = 'block';
+                document.getElementById('scan-results').style.display = 'none';
+            });
+        }
+
+        function addScannedItem() {
+            // Redirect to add form with pre-filled data
+            window.location.href = "{% url 'add_pantry_item' %}";
+        }
+
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+    </script>
+</body>
+</html>

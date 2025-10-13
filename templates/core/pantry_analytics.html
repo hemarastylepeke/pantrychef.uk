@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pantry Analytics - PantryChef</title>
+</head>
+<body>
+    <header>
+        <h1>Pantry Analytics</h1>
+        <nav>
+            <a href="{% url 'core:pantry_dashboard' %}">Back to Pantry</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Waste Statistics -->
+        <section>
+            <h2>Food Waste Statistics</h2>
+            <p>Total Waste Cost: ${{ total_waste_cost }}</p>
+            
+            <h3>Waste by Reason</h3>
+            <ul>
+                {% for reason, cost in waste_by_reason.items %}
+                <li>{{ reason }}: ${{ cost }}</li>
+                {% endfor %}
+            </ul>
+
+            <h3>Recent Waste Records</h3>
+            {% if waste_records %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Cost</th>
+                        <th>Reason</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in waste_records %}
+                    <tr>
+                        <td>{{ record.ingredient.name }}</td>
+                        <td>{{ record.quantity_wasted }} {{ record.unit }}</td>
+                        <td>${{ record.cost }}</td>
+                        <td>{{ record.get_reason_display }}</td>
+                        <td>{{ record.waste_date }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No waste records found.</p>
+            {% endif %}
+        </section>
+
+        <!-- Consumption Patterns -->
+        <section>
+            <h2>Consumption Patterns</h2>
+            {% if consumption_records %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity Used</th>
+                        <th>Recipe</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in consumption_records %}
+                    <tr>
+                        <td>{{ record.pantry_item.ingredient.name }}</td>
+                        <td>{{ record.quantity_used }} {{ record.pantry_item.unit }}</td>
+                        <td>{% if record.recipe %}{{ record.recipe.name }}{% else %}-{% endif %}</td>
+                        <td>{{ record.date_consumed }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No consumption records found.</p>
+            {% endif %}
+        </section>
+
+        <!-- Current Pantry Value -->
+        <section>
+            <h2>Current Pantry Status</h2>
+            <p>Current Pantry Value: ${{ current_pantry_value }}</p>
+        </section>
+    </main>
+</body>
+</html>

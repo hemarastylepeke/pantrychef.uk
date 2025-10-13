@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Item to Pantry - PantryChef</title>
+</head>
+<body>
+    <header>
+        <h1>Add Item to Pantry</h1>
+        <nav>
+            <a href="{% url 'pantry_dashboard' %}">Back to Pantry</a>
+        </nav>
+    </header>
+
+    <main>
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div>
+                <label>Ingredient:</label>
+                {{ form.ingredient }}
+            </div>
+
+            <div>
+                <label>Custom Name (optional):</label>
+                {{ form.custom_name }}
+            </div>
+
+            <div>
+                <label>Quantity:</label>
+                {{ form.quantity }}
+            </div>
+
+            <div>
+                <label>Unit:</label>
+                {{ form.unit }}
+            </div>
+
+            <div>
+                <label>Purchase Date:</label>
+                {{ form.purchase_date }}
+            </div>
+
+            <div>
+                <label>Expiry Date:</label>
+                {{ form.expiry_date }}
+            </div>
+
+            <div>
+                <label>Price (optional):</label>
+                {{ form.price }}
+            </div>
+
+            <div>
+                <label>Product Image (optional):</label>
+                {{ form.product_image }}
+            </div>
+
+            <div>
+                <label>Expiry Label Image (optional):</label>
+                {{ form.expiry_label_image }}
+            </div>
+
+            <div>
+                <label>Notes (optional):</label>
+                {{ form.notes }}
+            </div>
+
+            <button type="submit">Add to Pantry</button>
+        </form>
+    </main>
+</body>
+</html>
