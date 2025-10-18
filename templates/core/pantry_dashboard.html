@@ -1,187 +1,400 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My Pantry - PantryChef</title>
-</head>
-<body>
-    <header>
-        <h1>My Pantry</h1>
-        <nav>
-            <a href="{% url 'profile_page' %}">Profile</a>
-            <a href="{% url 'pantry_dashboard' %}">Pantry</a>
-            <a href="">Recipes</a>
-            <a href="">Shopping</a>
-        </nav>
-    </header>
-
-    <main>
-        {% if messages %}
-        <div class="messages">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">
-                {{ message }}
+{% extends "core/base.html" %}
+{% load static %}
+{% block content %}
+<section class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-white shadow-lg flex flex-col">
+            <!-- Logo -->
+            <div class="p-6 border-b">
+                <h1 class="text-2xl font-bold text-primary">Pantry<span class="text-secondary">Cheff</span></h1>
+                <p class="text-sm text-gray-500 mt-1">Food Waste Reduction</p>
             </div>
-            {% endfor %}
+
+            <!-- Navigation -->
+            <div class="flex-1 p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="#" class="flex items-center p-3 text-gray-700 rounded-lg bg-green-50 border-l-4 border-primary">
+                            <i class="fas fa-home mr-3 text-primary"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                            <i class="fas fa-utensils mr-3"></i>
+                            <span>Recipes</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                            <i class="fas fa-shopping-basket mr-3"></i>
+                            <span>Pantry</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                            <i class="fas fa-list-alt mr-3"></i>
+                            <span>Shopping Lists</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                            <i class="fas fa-chart-pie mr-3"></i>
+                            <span>Nutrition</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                            <i class="fas fa-recycle mr-3"></i>
+                            <span>Waste Analytics</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                            <i class="fas fa-camera mr-3"></i>
+                            <span>Scan Items</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                            <i class="fas fa-cog mr-3"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- User Profile -->
+            <div class="p-4 border-t">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium">Chef Michael</p>
+                        <p class="text-xs text-gray-500">Premium Member</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        {% endif %}
 
-        <!-- Quick Actions -->
-        <section>
-            <h2>Quick Actions</h2>
-            <div>
-                <a href="{% url 'add_pantry_item' %}">Add Item</a>
-                <a href="{% url 'add_manual_ingredient' %}">Add Manual Item</a>
-                <a href="{% url 'scan_ingredient' %}">Scan Item</a>
-                <a href="{% url 'pantry_analytics' %}">View Analytics</a>
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Header -->
+            <header class="bg-white shadow-sm p-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-800">Dashboard Overview</h2>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <input type="text" placeholder="Search recipes..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                            <i class="fas fa-plus mr-2"></i>Add Item
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="p-6">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow p-6 border-l-4 border-primary">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm">Pantry Items</p>
+                                <h3 class="text-2xl font-bold mt-2">42</h3>
+                            </div>
+                            <div class="bg-green-100 p-3 rounded-lg">
+                                <i class="fas fa-egg text-primary text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-green-600 text-sm mt-4">
+                            <i class="fas fa-arrow-up mr-1"></i>12% from last month
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-6 border-l-4 border-secondary">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm">Food Waste Saved</p>
+                                <h3 class="text-2xl font-bold mt-2">$156</h3>
+                            </div>
+                            <div class="bg-amber-100 p-3 rounded-lg">
+                                <i class="fas fa-dollar-sign text-secondary text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-amber-600 text-sm mt-4">
+                            <i class="fas fa-chart-line mr-1"></i>24% reduction
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-6 border-l-4 border-accent">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm">Recipes Created</p>
+                                <h3 class="text-2xl font-bold mt-2">18</h3>
+                            </div>
+                            <div class="bg-blue-100 p-3 rounded-lg">
+                                <i class="fas fa-book text-accent text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-blue-600 text-sm mt-4">
+                            <i class="fas fa-check mr-1"></i>Used 85% of pantry
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-6 border-l-4 border-purple-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm">Budget Status</p>
+                                <h3 class="text-2xl font-bold mt-2">$45/$100</h3>
+                            </div>
+                            <div class="bg-purple-100 p-3 rounded-lg">
+                                <i class="fas fa-wallet text-purple-500 text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-purple-600 text-sm mt-4">
+                            <i class="fas fa-exclamation-circle mr-1"></i>45% of weekly budget
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Main Content Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left Column -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Expiring Soon -->
+                        <div class="bg-white rounded-xl shadow p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-lg font-semibold">Items Expiring Soon</h3>
+                                <a href="#" class="text-primary text-sm font-medium">View All</a>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex items-center p-4 border rounded-lg">
+                                    <div class="bg-red-100 p-3 rounded-lg mr-4">
+                                        <i class="fas fa-exclamation-triangle text-red-500"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-medium">Milk</h4>
+                                        <p class="text-gray-500 text-sm">Expires tomorrow • 500ml</p>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button class="bg-primary text-white px-3 py-1 rounded text-sm">Use Now</button>
+                                        <button class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm">Log Waste</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center p-4 border rounded-lg">
+                                    <div class="bg-amber-100 p-3 rounded-lg mr-4">
+                                        <i class="fas fa-clock text-amber-500"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-medium">Yogurt</h4>
+                                        <p class="text-gray-500 text-sm">Expires in 2 days • 2 containers</p>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button class="bg-primary text-white px-3 py-1 rounded text-sm">Use Now</button>
+                                        <button class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm">Log Waste</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center p-4 border rounded-lg">
+                                    <div class="bg-amber-100 p-3 rounded-lg mr-4">
+                                        <i class="fas fa-clock text-amber-500"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-medium">Spinach</h4>
+                                        <p class="text-gray-500 text-sm">Expires in 3 days • 200g</p>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button class="bg-primary text-white px-3 py-1 rounded text-sm">Use Now</button>
+                                        <button class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm">Log Waste</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="bg-white rounded-xl shadow p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-lg font-semibold">Recent Activity</h3>
+                                <a href="#" class="text-primary text-sm font-medium">View All</a>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex items-start">
+                                    <div class="bg-green-100 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-check text-green-500"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium">Used tomatoes in recipe</h4>
+                                        <p class="text-gray-500 text-sm">Pasta Pomodoro • 2 hours ago</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="bg-blue-100 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-shopping-cart text-blue-500"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium">Added to shopping list</h4>
+                                        <p class="text-gray-500 text-sm">Milk, Eggs, Bread • 1 day ago</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="bg-red-100 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-trash text-red-500"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium">Logged food waste</h4>
+                                        <p class="text-gray-500 text-sm">Expired cheese • 2 days ago</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="bg-purple-100 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-camera text-purple-500"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium">Scanned pantry item</h4>
+                                        <p class="text-gray-500 text-sm">Canned tomatoes • 3 days ago</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="space-y-6">
+                        <!-- Quick Actions -->
+                        <div class="bg-white rounded-xl shadow p-6">
+                            <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button class="bg-primary text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-green-600 transition">
+                                    <i class="fas fa-camera text-xl mb-2"></i>
+                                    <span class="text-sm">Scan Item</span>
+                                </button>
+                                <button class="bg-secondary text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-amber-600 transition">
+                                    <i class="fas fa-utensils text-xl mb-2"></i>
+                                    <span class="text-sm">Add Recipe</span>
+                                </button>
+                                <button class="bg-accent text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-blue-600 transition">
+                                    <i class="fas fa-list text-xl mb-2"></i>
+                                    <span class="text-sm">Shopping List</span>
+                                </button>
+                                <button class="bg-purple-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-purple-600 transition">
+                                    <i class="fas fa-chart-bar text-xl mb-2"></i>
+                                    <span class="text-sm">Analytics</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Recipe Suggestions -->
+                        <div class="bg-white rounded-xl shadow p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold">Recipe Suggestions</h3>
+                                <a href="#" class="text-primary text-sm font-medium">View All</a>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="border rounded-lg p-3">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-medium">Veggie Omelette</h4>
+                                            <p class="text-gray-500 text-sm">Uses eggs, spinach, tomatoes</p>
+                                        </div>
+                                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">95% Match</span>
+                                    </div>
+                                    <div class="flex justify-between mt-3 text-sm">
+                                        <span><i class="fas fa-clock mr-1"></i>15 min</span>
+                                        <span><i class="fas fa-fire mr-1"></i>320 cal</span>
+                                        <span><i class="fas fa-star mr-1"></i>4.5</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="border rounded-lg p-3">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-medium">Pasta Pomodoro</h4>
+                                            <p class="text-gray-500 text-sm">Uses pasta, tomatoes, basil</p>
+                                        </div>
+                                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">88% Match</span>
+                                    </div>
+                                    <div class="flex justify-between mt-3 text-sm">
+                                        <span><i class="fas fa-clock mr-1"></i>25 min</span>
+                                        <span><i class="fas fa-fire mr-1"></i>450 cal</span>
+                                        <span><i class="fas fa-star mr-1"></i>4.2</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Waste Reduction Tips -->
+                        <div class="bg-white rounded-xl shadow p-6">
+                            <h3 class="text-lg font-semibold mb-4">Waste Reduction Tips</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-start">
+                                    <div class="bg-green-100 p-2 rounded-lg mr-3 mt-1">
+                                        <i class="fas fa-lightbulb text-green-500 text-sm"></i>
+                                    </div>
+                                    <p class="text-sm">Freeze leftover bread to use for croutons or breadcrumbs.</p>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="bg-green-100 p-2 rounded-lg mr-3 mt-1">
+                                        <i class="fas fa-lightbulb text-green-500 text-sm"></i>
+                                    </div>
+                                    <p class="text-sm">Use vegetable scraps to make homemade broth.</p>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="bg-green-100 p-2 rounded-lg mr-3 mt-1">
+                                        <i class="fas fa-lightbulb text-green-500 text-sm"></i>
+                                    </div>
+                                    <p class="text-sm">Plan meals around ingredients that will expire soon.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </section>
+        </div>
+    </div>
+</section>
+{% endblock content %}
 
-        <!-- Alerts Section -->
-        <section>
-            <h2>Alerts</h2>
-            
-            <!-- Expiring Soon -->
-            {% if expiring_soon %}
-            <div>
-                <h3>Expiring Soon (Next 3 Days)</h3>
-                <ul>
-                    {% for item in expiring_soon %}
-                    <li>
-                        {{ item.ingredient.name }} - Expires: {{ item.expiry_date }}
-                        <a href="{% url 'core:log_consumption' item.id %}">Use</a>
-                        <a href="{% url 'core:record_waste' item.id %}">Mark Waste</a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-
-            <!-- Expired Items -->
-            {% if expired_items %}
-            <div>
-                <h3>Expired Items</h3>
-                <ul>
-                    {% for item in expired_items %}
-                    <li>
-                        {{ item.ingredient.name }} - Expired: {{ item.expiry_date }}
-                        <a href="{% url 'core:record_waste' item.id %}">Record Waste</a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-        </section>
-
-        <!-- Pantry Inventory -->
-        <section>
-            <h2>Current Inventory</h2>
-            <p>Total Items: {{ total_items }} | Estimated Value: ${{ total_value }}</p>
-            
-            {% if pantry_items %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Quantity</th>
-                        <th>Purchased</th>
-                        <th>Expires</th>
-                        <th>Price</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in pantry_items %}
-                    <tr>
-                        <td>
-                            {% if item.custom_name %}
-                                {{ item.custom_name }} ({{ item.ingredient.name }})
-                            {% else %}
-                                {{ item.ingredient.name }}
-                            {% endif %}
-                        </td>
-                        <td>{{ item.quantity }} {{ item.unit }}</td>
-                        <td>{{ item.purchase_date }}</td>
-                        <td>{{ item.expiry_date }}</td>
-                        <td>${{ item.price|default:"0.00" }}</td>
-                        <td>
-                            <a href="{% url 'core:edit_pantry_item' item.id %}">Edit</a>
-                            <a href="{% url 'core:log_consumption' item.id %}">Use</a>
-                            <a href="{% url 'core:record_waste' item.id %}">Waste</a>
-                            <a href="{% url 'core:delete_pantry_item' item.id %}">Remove</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p>Your pantry is empty. Add some items to get started!</p>
-            {% endif %}
-        </section>
-
-        <!-- Recent Consumption -->
-        <section>
-            <h2>Recent Consumption</h2>
-            {% if recent_consumption %}
-            <ul>
-                {% for consumption in recent_consumption %}
-                <li>
-                    {{ consumption.quantity_used }} {{ consumption.pantry_item.unit }} 
-                    of {{ consumption.pantry_item.ingredient.name }}
-                    on {{ consumption.date_consumed }}
-                    {% if consumption.recipe %} - Used in: {{ consumption.recipe.name }}{% endif %}
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p>No recent consumption recorded.</p>
-            {% endif %}
-        </section>
-    </main>
-
-    <script>
-        function updateQuantity(itemId, newQuantity) {
-            fetch(`/core/pantry/${itemId}/update-quantity/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': getCSRFToken()
-                },
-                body: `quantity=${newQuantity}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Quantity updated!');
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.error);
-                }
+<script>
+    // Simple JavaScript for interactive elements
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add click handlers for quick action buttons
+        const quickActionButtons = document.querySelectorAll('.grid.grid-cols-2 button');
+        quickActionButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.querySelector('span').textContent;
+                alert(`Action: ${action} - This would navigate to the appropriate page in a real application.`);
             });
-        }
+        });
 
-        function quickConsume(itemId) {
-            if (confirm('Mark this item as fully consumed?')) {
-                fetch(`/core/pantry/${itemId}/quick-consume/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': getCSRFToken()
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
-                        location.reload();
-                    }
+        // Add click handlers for "Use Now" buttons
+        const useNowButtons = document.querySelectorAll('button.bg-primary');
+        useNowButtons.forEach(button => {
+            if (button.textContent.includes('Use Now')) {
+                button.addEventListener('click', function() {
+                    const item = this.closest('.flex.items-center').querySelector('h4').textContent;
+                    alert(`Finding recipes for: ${item}`);
                 });
             }
-        }
+        });
 
-        function getCSRFToken() {
-            return document.querySelector('[name=csrfmiddlewaretoken]').value;
-        }
-    </script>
-</body>
-</html>
+        // Add click handlers for "Log Waste" buttons
+        const logWasteButtons = document.querySelectorAll('button.bg-gray-200');
+        logWasteButtons.forEach(button => {
+            if (button.textContent.includes('Log Waste')) {
+                button.addEventListener('click', function() {
+                    const item = this.closest('.flex.items-center').querySelector('h4').textContent;
+                    alert(`Logging waste for: ${item}`);
+                });
+            }
+        });
+    });
+</script>

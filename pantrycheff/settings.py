@@ -56,8 +56,9 @@ MIDDLEWARE = [
 ]
 
 # Tailwind CSS configuration
-TAILWIND_APP_NAME = 'subliminal_tailwind'
-NPM_BIN_PATH = 'npm.cmd'
+TAILWIND_APP_NAME = 'pantrycheff_tailwind'
+NPM_BIN_PATH = "/usr/bin/npm"
+INTERNAL_IPS = ['127.0.0.1',]
 
 ROOT_URLCONF = 'pantrycheff.urls'
 
@@ -231,5 +232,3 @@ ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
 # Session settings
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGOUT_ON_GET = True
-
-TAILWIND_APP_NAME = 'pantrycheff_tailwind'

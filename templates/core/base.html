@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en" id="html-root">
+    {% load static tailwind_tags %}
+    {% load static %}
+    {% include 'core/includes/messages.html' %}
+
+    <head>
+        {% tailwind_css %}
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}PantryCheff - Reduce Food Waste{% endblock %}</title>
+        <meta name="description" content="Smart pantry management, recipe suggestions, and food waste reduction. Track your ingredients, get AI-powered shopping lists, and save money while reducing food waste.">
+        <meta name="keywords" content="pantry management, food waste reduction, recipe suggestions, shopping lists, meal planning, nutrition tracking, budget management, grocery planning">
+        <meta name="author" content="PantryCheff">
+        <meta property="og:title" content="PantryCheff - Smart Food Management & Waste Reduction">
+        <meta property="og:description" content="Smart pantry management, recipe suggestions, and food waste reduction. Track your ingredients, get AI-powered shopping lists, and save money while reducing food waste.">
+        <meta property="og:type" content="website">
+        <link rel="canonical" href="https://pantrycheff.com">
+        <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+        <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    </head>
+
+<body class="dark:bg-slate-900 bg-gray-50">
+    <!-- Navbar -->
+    <nav class="bg-white font-barlow border-b border-slate-200 dark:border-slate-800 dark:bg-slate-900 mx-auto transition-theme">
+        <div class="flex flex-wrap justify-between items-center mx-auto w-full max-w-7xl py-4 px-2">
+            <a href="{% url 'core:pantry_dashboard' %}" class="flex items-center">
+                <span class="text-2xl font-bold text-green-600">Pantry<span class="text-amber-500">Cheff</span></span>
+            </a>
+            <button onclick="toggleMobileMenu()" type="button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-slate-500 rounded-lg md:hidden hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 dark:focus:ring-slate-600" aria-controls="mega-menu-full" aria-expanded="false">
+                <span class="sr-only">Open main menu</span>
+                <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
+                </svg>
+            </button>
+            <div id="mega-menu-full" class="items-center justify-between font-medium w-full md:flex md:w-auto md:order-1 hidden">
+                <ul class="flex flex-col p-4 md:p-0 mt-4 w-full border border-slate-200 rounded-lg bg-white md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 dark:bg-slate-900 dark:border-slate-700 md:items-center">
+                    <li>
+                        <a href="{% url 'core:pantry_dashboard' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if request.resolver_match.url_name == 'pantry_dashboard' %}text-green-600 font-semibold{% endif %}">
+                            <i class="fas fa-home mr-2 text-sm"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'core:recipe_list' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'recipe' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
+                            <i class="fas fa-utensils mr-2 text-sm"></i>
+                            Recipes
+                        </a>
+                    </li>
+                    <li>
+                        <button onclick="toggleDropdown()" class="flex items-center justify-between w-full py-2 px-3 text-slate-900 rounded-sm md:w-auto hover:bg-slate-100 md:hover:bg-transparent md:border-0 md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700">
+                            <i class="fas fa-shopping-basket mr-2 text-sm"></i>
+                            Pantry 
+                            <svg class="w-2.5 h-2.5 ms-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
+                            </svg>
+                        </button>
+                    </li>
+                    <li>
+                        <a href="{% url 'core:shopping_list' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'shopping' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
+                            <i class="fas fa-list-alt mr-2 text-sm"></i>
+                            Shopping Lists
+                        </a>
+                    </li>
+                    {% if request.user.is_authenticated %}
+                        <li class="relative">
+                            <a href="{% url 'core:pantry_analytics' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'analytics' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
+                                <i class="fas fa-chart-pie mr-2 text-sm"></i>
+                                Analytics
+                                {% if expiring_count and expiring_count > 0 %}
+                                    <span class="ml-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{ expiring_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'profile_page' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'profile' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
+                                <i class="fas fa-user mr-2 text-sm"></i>
+                                Profile
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'account_logout' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-red-600 md:p-0 dark:text-white md:dark:hover:text-red-500 dark:hover:bg-slate-700 dark:hover:text-red-500 md:dark:hover:bg-transparent dark:border-slate-700">
+                                <i class="fas fa-sign-out-alt mr-2 text-sm"></i>
+                                Logout
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="p-3">
+                            <a href="{% url 'account_login' %}" class="block text-center flex items-center justify-center bg-green-600 border border-green-700 hover:bg-transparent rounded-md px-3 py-2 w-full ease-in duration-300 text-white hover:text-green-600">
+                                <i class="fas fa-sign-in-alt mr-2"></i>
+                                Login
+                            </a>
+                        </li>
+                    {% endif %}
+                    <li class="flex justify-end">
+                        <!-- Dark mode toggle button -->
+                        <button id="dark-mode-toggle" type="button" class="p-2 text-slate-500 rounded-lg hover:bg-slate-100 dark:text-slate-400 hover:cursor-pointer border dark:border-slate-800 border-slate-200 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600 transition-theme" aria-label="Toggle dark mode">
+                            <!-- Sun icon (visible in dark mode) -->
+                            <svg id="sun-icon" class="w-5 h-5 hidden transition-theme" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+                            </svg>
+                            <!-- Moon icon (visible in light mode) -->
+                            <svg id="moon-icon" class="w-5 h-5 transition-theme" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                            </svg>
+                        </button>
+                    </li>
+                </ul> 
+            </div>
+        </div>
+        <div id="mega-menu-full-dropdown" class="mt-1 border-slate-200 shadow-xs bg-white md:bg-gray-50 border-y dark:bg-slate-900 dark:border-slate-900 hidden">
+            <div class="grid max-w-screen-xl px-4 py-5 mx-auto text-slate-900 dark:text-white sm:grid-cols-2 md:px-6">
+                <ul>
+                    <li>
+                        <a href="{% url 'core:pantry_dashboard' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                            <i class="fas fa-eye mr-3 text-green-600"></i>
+                            <div>
+                                <div class="font-semibold">View Pantry</div>
+                                <span class="text-sm text-slate-500 dark:text-slate-400">See all your current ingredients and expiry dates</span>
+                            </div>
+                        </a>
+                    </li>    
+                    <li>
+                        <a href="{% url 'core:add_pantry_item' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                            <i class="fas fa-plus mr-3 text-green-600"></i>
+                            <div>
+                                <div class="font-semibold">Add Item</div>
+                                <span class="text-sm text-slate-500 dark:text-slate-400">Manually add new ingredients to your pantry</span>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'core:scan_ingredient' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                            <i class="fas fa-camera mr-3 text-green-600"></i>
+                            <div>
+                                <div class="font-semibold">Scan Item</div>
+                                <span class="text-sm text-slate-500 dark:text-slate-400">Use AI to scan expiry dates and ingredients</span>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'core:pantry_analytics' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                            <i class="fas fa-chart-line mr-3 text-green-600"></i>
+                            <div>
+                                <div class="font-semibold">Waste Analytics</div>
+                                <span class="text-sm text-slate-500 dark:text-slate-400">Track your food waste and savings</span>
+                            </div>
+                        </a>
+                    </li>
+                </ul>
+                <ul>
+                    <li>
+                        <a href="#" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                            <i class="fas fa-clock mr-3 text-amber-500"></i>
+                            <div>
+                                <div class="font-semibold">Expiring Soon</div>
+                                <span class="text-sm text-slate-500 dark:text-slate-400">Items that need to be used quickly</span>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                            <i class="fas fa-utensils mr-3 text-blue-500"></i>
+                            <div>
+                                <div class="font-semibold">Quick Recipes</div>
+                                <span class="text-sm text-slate-500 dark:text-slate-400">Fast meals using pantry items</span>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                            <i class="fas fa-trash-alt mr-3 text-red-500"></i>
+                            <div>
+                                <div class="font-semibold">Log Waste</div>
+                                <span class="text-sm text-slate-500 dark:text-slate-400">Record food that went to waste</span>
+                            </div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Messages Display -->
+    <div class="container mx-auto px-4">
+        {% if messages %}
+            <div class="my-4">
+                {% for message in messages %}
+                    <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-200{% elif message.tags == 'error' %}bg-red-100 text-red-800 border border-red-200{% elif message.tags == 'warning' %}bg-amber-100 text-amber-800 border border-amber-200{% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    {% block content %}
+        <!-- Page content will go here -->
+    {% endblock %}
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 mt-12">
+        <div class="max-w-7xl mx-auto py-8 px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold text-green-600 mb-4">Pantry<span class="text-amber-500">Cheff</span></h3>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">
+                        Smart pantry management and food waste reduction for a sustainable kitchen.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Features</h4>
+                    <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                        <li><a href="#" class="hover:text-green-600">Pantry Tracking</a></li>
+                        <li><a href="#" class="hover:text-green-600">Recipe Suggestions</a></li>
+                        <li><a href="#" class="hover:text-green-600">Shopping Lists</a></li>
+                        <li><a href="#" class="hover:text-green-600">Waste Analytics</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                        <li><a href="#" class="hover:text-green-600">Cooking Tips</a></li>
+                        <li><a href="#" class="hover:text-green-600">Food Storage</a></li>
+                        <li><a href="#" class="hover:text-green-600">Meal Planning</a></li>
+                        <li><a href="#" class="hover:text-green-600">Budget Guide</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Support</h4>
+                    <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                        <li><a href="#" class="hover:text-green-600">Help Center</a></li>
+                        <li><a href="#" class="hover:text-green-600">Contact Us</a></li>
+                        <li><a href="#" class="hover:text-green-600">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-green-600">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-slate-200 dark:border-slate-800 mt-8 pt-6 text-center text-sm text-slate-500">
+                <p>&copy; 2024 PantryCheff. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- <script src="{% static 'js/dark_mode_toggle.js' %}"></script> -->
+    <script>
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mega-menu-full');
+            menu.classList.toggle('hidden');
+        }
+
+        // Dropdown toggle
+        function toggleDropdown() {
+            const dropdown = document.getElementById('mega-menu-full-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('mega-menu-full-dropdown');
+            const button = event.target.closest('button');
+            
+            if (!button || !button.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Initialize AOS
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof AOS !== 'undefined') {
+                AOS.init({
+                    duration: 800,
+                    once: true
+                });
+            }
+        });
+    </script>
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+</body>
+</html>
