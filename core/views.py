@@ -5,9 +5,10 @@ from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
 import json
-from .models import UserPantry, Ingredient, ConsumptionRecord, FoodWasteRecord, ImageProcessingJob
+from .models import UserPantry, Ingredient, ConsumptionRecord, FoodWasteRecord, ImageProcessingJob, Recipe
 from .forms import PantryItemForm, ManualIngredientForm, ConsumptionForm, WasteRecordForm
 from .services.vision_service import ExpiryDateDetector
+from accounts.models import Budget
 
 @login_required(login_url='account_login')
 def pantry_dashboard_view(request):
@@ -21,6 +22,10 @@ def pantry_dashboard_view(request):
     soon = timezone.now().date() + timedelta(days=3)
     expiring_soon = pantry_items.filter(expiry_date__lte=soon)
     
+    # Add days until expiry for template
+    for item in expiring_soon:
+        item.days_until_expiry = (item.expiry_date - timezone.now().date()).days
+    
     # Get recently expired items
     expired_items = pantry_items.filter(expiry_date__lt=timezone.now().date())
     
@@ -28,11 +33,33 @@ def pantry_dashboard_view(request):
     recent_consumption = ConsumptionRecord.objects.filter(
         user=request.user, 
         date_consumed__gte=timezone.now().date() - timedelta(days=7)
-    ).order_by('-date_consumed')[:10]
+    ).select_related('pantry_item', 'recipe').order_by('-date_consumed')[:10]
     
     # Calculate pantry statistics
     total_items = pantry_items.count()
     total_value = sum(item.price for item in pantry_items if item.price)
+    
+    # Calculate waste savings (you'll need to implement this logic)
+    waste_savings = calculate_waste_savings(request.user)
+    
+    # Recipe suggestions (you'll need to implement this logic)
+    recipe_suggestions = get_recipe_suggestions(request.user)
+    
+    # Waste reduction tips
+    waste_tips = [
+        "Freeze leftover bread to use for croutons or breadcrumbs.",
+        "Use vegetable scraps to make homemade broth.",
+        "Plan meals around ingredients that will expire soon.",
+        "Store herbs in water to keep them fresh longer.",
+        "Use overripe fruits in smoothies or baking."
+    ]
+    
+    # Budget information
+    current_budget = Budget.objects.filter(user=request.user, active=True).first()
+    budget_percentage = 0
+    if current_budget:
+        # Calculate budget usage (you'll need to implement this)
+        budget_percentage = min(100, int((current_budget.amount_spent / current_budget.amount) * 100))
     
     context = {
         'pantry_items': pantry_items,
@@ -41,10 +68,46 @@ def pantry_dashboard_view(request):
         'recent_consumption': recent_consumption,
         'total_items': total_items,
         'total_value': total_value,
+        'waste_savings': waste_savings,
+        'waste_reduction_percentage': 24,  # You'll need to calculate this
+        'recipes_created': Recipe.objects.filter(created_by=request.user).count(),
+        'pantry_utilization': 85,  # You'll need to calculate this
+        'current_budget': current_budget,
+        'budget_percentage': budget_percentage,
+        'recipe_suggestions': recipe_suggestions,
+        'waste_tips': waste_tips,
         'pantry_form': PantryItemForm(),
         'manual_form': ManualIngredientForm(),
     }
     return render(request, 'core/pantry_dashboard.html', context)
+
+# Helper functions you'll need to implement
+def calculate_waste_savings(user):
+    """Calculate total waste savings for the user"""
+    # Implement your logic here
+    return 156  # Example value
+
+def get_recipe_suggestions(user):
+    """Get AI-powered recipe suggestions based on pantry items"""
+    # Implement your logic here
+    return [
+        {
+            'name': 'Veggie Omelette',
+            'matching_ingredients': ['eggs', 'spinach', 'tomatoes'],
+            'match_percentage': 95,
+            'prep_time': 15,
+            'calories': 320,
+            'rating': 4.5
+        },
+        {
+            'name': 'Pasta Pomodoro', 
+            'matching_ingredients': ['pasta', 'tomatoes', 'basil'],
+            'match_percentage': 88,
+            'prep_time': 25,
+            'calories': 450,
+            'rating': 4.2
+        }
+    ]
 
 @login_required(login_url='account_login')
 def add_pantry_item_view(request):
