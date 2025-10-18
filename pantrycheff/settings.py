@@ -32,8 +32,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # 'storages',
-    # 'tailwind',
-    # 'subliminal_tailwind',
+    'tailwind',
+    'pantrycheff_tailwind',
     'core.apps.CoreConfig',
     'accounts.apps.AccountsConfig',
 
@@ -232,3 +232,4 @@ ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGOUT_ON_GET = True
 
+TAILWIND_APP_NAME = 'pantrycheff_tailwind'
