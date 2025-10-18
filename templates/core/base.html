@@ -25,7 +25,7 @@
     <!-- Navbar -->
     <nav class="bg-white font-barlow border-b border-slate-200 dark:border-slate-800 dark:bg-slate-900 mx-auto transition-theme">
         <div class="flex flex-wrap justify-between items-center mx-auto w-full max-w-7xl py-4 px-2">
-            <a href="{% url 'core:pantry_dashboard' %}" class="flex items-center">
+            <a href="{% url 'pantry_dashboard' %}" class="flex items-center">
                 <span class="text-2xl font-bold text-green-600">Pantry<span class="text-amber-500">Cheff</span></span>
             </a>
             <button onclick="toggleMobileMenu()" type="button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-slate-500 rounded-lg md:hidden hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 dark:focus:ring-slate-600" aria-controls="mega-menu-full" aria-expanded="false">
@@ -37,13 +37,13 @@
             <div id="mega-menu-full" class="items-center justify-between font-medium w-full md:flex md:w-auto md:order-1 hidden">
                 <ul class="flex flex-col p-4 md:p-0 mt-4 w-full border border-slate-200 rounded-lg bg-white md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 dark:bg-slate-900 dark:border-slate-700 md:items-center">
                     <li>
-                        <a href="{% url 'core:pantry_dashboard' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if request.resolver_match.url_name == 'pantry_dashboard' %}text-green-600 font-semibold{% endif %}">
+                        <a href="{% url 'pantry_dashboard' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if request.resolver_match.url_name == 'pantry_dashboard' %}text-green-600 font-semibold{% endif %}">
                             <i class="fas fa-home mr-2 text-sm"></i>
                             Dashboard
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'core:recipe_list' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'recipe' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
+                        <a href="" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'recipe' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
                             <i class="fas fa-utensils mr-2 text-sm"></i>
                             Recipes
                         </a>
@@ -58,14 +58,14 @@
                         </button>
                     </li>
                     <li>
-                        <a href="{% url 'core:shopping_list' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'shopping' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
+                        <a href="" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'shopping' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
                             <i class="fas fa-list-alt mr-2 text-sm"></i>
                             Shopping Lists
                         </a>
                     </li>
                     {% if request.user.is_authenticated %}
                         <li class="relative">
-                            <a href="{% url 'core:pantry_analytics' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'analytics' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
+                            <a href="{% url 'pantry_analytics' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'analytics' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
                                 <i class="fas fa-chart-pie mr-2 text-sm"></i>
                                 Analytics
                                 {% if expiring_count and expiring_count > 0 %}
@@ -113,7 +113,7 @@
             <div class="grid max-w-screen-xl px-4 py-5 mx-auto text-slate-900 dark:text-white sm:grid-cols-2 md:px-6">
                 <ul>
                     <li>
-                        <a href="{% url 'core:pantry_dashboard' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                        <a href="{% url 'pantry_dashboard' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
                             <i class="fas fa-eye mr-3 text-green-600"></i>
                             <div>
                                 <div class="font-semibold">View Pantry</div>
@@ -122,7 +122,7 @@
                         </a>
                     </li>    
                     <li>
-                        <a href="{% url 'core:add_pantry_item' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                        <a href="{% url 'add_pantry_item' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
                             <i class="fas fa-plus mr-3 text-green-600"></i>
                             <div>
                                 <div class="font-semibold">Add Item</div>
@@ -131,7 +131,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'core:scan_ingredient' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                        <a href="" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
                             <i class="fas fa-camera mr-3 text-green-600"></i>
                             <div>
                                 <div class="font-semibold">Scan Item</div>
@@ -140,7 +140,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'core:pantry_analytics' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                        <a href="" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
                             <i class="fas fa-chart-line mr-3 text-green-600"></i>
                             <div>
                                 <div class="font-semibold">Waste Analytics</div>
@@ -243,7 +243,7 @@
         </div>
     </footer>
 
-    <!-- <script src="{% static 'js/dark_mode_toggle.js' %}"></script> -->
+    <script src="{% static 'js/dark_mode_toggle.js' %}"></script>
     <script>
         // Mobile menu toggle
         function toggleMobileMenu() {

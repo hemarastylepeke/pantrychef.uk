@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
 {% load static %}
 
 {% block title %}Pantry Dashboard - PantryCheff{% endblock %}
@@ -17,37 +17,37 @@
         <div class="flex-1 p-4">
             <ul class="space-y-2">
                 <li>
-                    <a href="{% url 'core:pantry_dashboard' %}" class="flex items-center p-3 text-gray-700 rounded-lg bg-green-50 border-l-4 border-primary">
+                    <a href="{% url 'pantry_dashboard' %}" class="flex items-center p-3 text-gray-700 rounded-lg bg-green-50 border-l-4 border-primary">
                         <i class="fas fa-home mr-3 text-primary"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'core:recipe_list' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                    <a href="" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
                         <i class="fas fa-utensils mr-3"></i>
                         <span>Recipes</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'core:add_pantry_item' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                    <a href="{% url 'add_pantry_item' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
                         <i class="fas fa-shopping-basket mr-3"></i>
                         <span>Add Pantry Item</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'core:shopping_list' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                    <a href="" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
                         <i class="fas fa-list-alt mr-3"></i>
                         <span>Shopping Lists</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'core:pantry_analytics' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                    <a href="{% url 'pantry_analytics' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
                         <i class="fas fa-chart-pie mr-3"></i>
                         <span>Nutrition & Analytics</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'core:scan_ingredient' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                    <a href="{% url 'scan_ingredient' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
                         <i class="fas fa-camera mr-3"></i>
                         <span>Scan Items</span>
                     </a>
@@ -60,7 +60,7 @@
             <div class="flex items-center">
                 <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
                     {% if user.userprofile.profile_image %}
-                        <img src="{{ user.userprofile.profile_image.url }}" alt="Profile" class="w-10 h-10 rounded-full">
+                        <img src="{{ user.userprofile.profile_image }}" alt="Profile" class="w-10 h-10 rounded-full">
                     {% else %}
                         <i class="fas fa-user"></i>
                     {% endif %}
@@ -90,7 +90,7 @@
                         <input type="text" placeholder="Search recipes..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                     </div>
-                    <a href="{% url 'core:add_pantry_item' %}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                    <a href="{% url 'add_pantry_item' %}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
                         <i class="fas fa-plus mr-2"></i>Add Item
                     </a>
                 </div>
@@ -170,7 +170,7 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-semibold">Items Expiring Soon</h3>
-                            <a href="{% url 'core:pantry_dashboard' %}" class="text-primary text-sm font-medium">View All</a>
+                            <a href="{% url 'pantry_dashboard' %}" class="text-primary text-sm font-medium">View All</a>
                         </div>
                         <div class="space-y-4">
                             {% for item in expiring_soon %}
@@ -207,7 +207,7 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-semibold">Recent Activity</h3>
-                            <a href="{% url 'core:pantry_analytics' %}" class="text-primary text-sm font-medium">View All</a>
+                            <a href="{% url 'pantry_analytics' %}" class="text-primary text-sm font-medium">View All</a>
                         </div>
                         <div class="space-y-4">
                             {% for record in recent_consumption %}
@@ -248,19 +248,19 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
                         <div class="grid grid-cols-2 gap-3">
-                            <a href="{% url 'core:scan_ingredient' %}" class="bg-primary text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-green-600 transition">
+                            <a href="" class="bg-primary text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-green-600 transition">
                                 <i class="fas fa-camera text-xl mb-2"></i>
                                 <span class="text-sm">Scan Item</span>
                             </a>
-                            <a href="{% url 'core:add_pantry_item' %}" class="bg-secondary text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-amber-600 transition">
+                            <a href="{% url 'add_pantry_item' %}" class="bg-secondary text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-amber-600 transition">
                                 <i class="fas fa-plus text-xl mb-2"></i>
                                 <span class="text-sm">Add Item</span>
                             </a>
-                            <a href="{% url 'core:shopping_list' %}" class="bg-accent text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-blue-600 transition">
+                            <a href="" class="bg-accent text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-blue-600 transition">
                                 <i class="fas fa-list text-xl mb-2"></i>
                                 <span class="text-sm">Shopping List</span>
                             </a>
-                            <a href="{% url 'core:pantry_analytics' %}" class="bg-purple-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-purple-600 transition">
+                            <a href="{% url 'pantry_analytics' %}" class="bg-purple-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-purple-600 transition">
                                 <i class="fas fa-chart-bar text-xl mb-2"></i>
                                 <span class="text-sm">Analytics</span>
                             </a>
@@ -271,7 +271,7 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold">Recipe Suggestions</h3>
-                            <a href="{% url 'core:recipe_list' %}" class="text-primary text-sm font-medium">View All</a>
+                            <a href="" class="text-primary text-sm font-medium">View All</a>
                         </div>
                         <div class="space-y-4">
                             {% for recipe in recipe_suggestions %}
