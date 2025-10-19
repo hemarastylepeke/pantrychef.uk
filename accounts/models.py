@@ -54,33 +54,37 @@ class UserProfile(models.Model):
     )
     first_name = models.CharField(max_length=100, null=True, blank=True)
     last_name = models.CharField(max_length=100, null=True, blank=True)
-    subscription_plan = models.CharField(max_length=20, choices=SUBSCRIPTION_PLANS, default='basic')
+    subscription_plan = models.CharField(
+        max_length=20, 
+        choices=SUBSCRIPTION_PLANS, 
+        default='basic'
+    )
     
     # Personal information for nutritional calculations
     height = models.FloatField(null=True, blank=True, help_text="Height in cm")  
     weight = models.FloatField(null=True, blank=True, help_text="Weight in kg")
     age = models.IntegerField(null=True, blank=True)
-    gender = models.CharField(max_length=20, choices=GENDER_CHOICES, null=True, blank=True)
+    gender = models.CharField(
+        max_length=20, 
+        choices=GENDER_CHOICES, 
+        null=True, 
+        blank=True
+    )
     activity_level = models.CharField(
         max_length=20, 
         choices=[
-            ('sedentary', 'Sedentary'), # inactive
+            ('sedentary', 'Sedentary'),
             ('light', 'Lightly Active'),
             ('moderate', 'Moderately Active'),
             ('active', 'Very Active'),
-            ('athlete', 'Athlete')
+            ('athlete', 'Athlete'),
         ],
         null=True, 
         blank=True
     )
     
-    # Dietary requirements
-    allergies = models.JSONField(default=list, blank=True, help_text="List of food allergies")
-    dietary_restrictions = models.JSONField(
-        default=list, 
-        blank=True, 
-        help_text="e.g., vegetarian, vegan, gluten-free"
-    )
+    allergies = models.TextField(blank=True, null=True)
+    dietary_restrictions = models.TextField(blank=True, null=True)
     disliked_ingredients = models.TextField(blank=True, null=True)
     preferred_cuisines = models.TextField(blank=True, null=True)
     
@@ -110,7 +114,7 @@ class UserGoal(models.Model):
     start_date = models.DateField(auto_now_add=True)
     target_date = models.DateField(null=True, blank=True)
     active = models.BooleanField(default=True)
-    priority = models.IntegerField(default=1, help_text="1-5, with 5 being highest priority")
+    priority = models.CharField(max_length=20, blank=True, null=True)
     bmi = models.FloatField(null=True, blank=True, help_text="Body Mass Index") # To be calculated based on height and weight to keep track of health
     
     created_at = models.DateTimeField(auto_now_add=True)

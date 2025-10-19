@@ -138,7 +138,6 @@ class DietaryRequirementsForm(forms.ModelForm):
         fields = ['allergies', 'dietary_restrictions', 'disliked_ingredients', 'preferred_cuisines']
     
     
-
 class UserGoalForm(forms.ModelForm):
     class Meta:
         model = UserGoal
@@ -161,7 +160,11 @@ class UserGoalForm(forms.ModelForm):
                 'type': 'date', 
                 'class': 'form-control'
             }),
-            'priority': forms.Select(attrs={'class': 'form-select'}),
+            # Change from Select → TextInput
+            'priority': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter priority (e.g. High, Medium, Low)'
+            }),
         }
         labels = {
             'current_value': 'Current Progress',
@@ -193,12 +196,10 @@ class UserGoalForm(forms.ModelForm):
                 })
         
         # Validate target date
-        if target_date:
-           
-            if target_date < timezone.now().date():
-                raise forms.ValidationError({
-                    'target_date': 'Target date cannot be in the past'
-                })
+        if target_date and target_date < timezone.now().date():
+            raise forms.ValidationError({
+                'target_date': 'Target date cannot be in the past'
+            })
         
         # Validate current value doesn't exceed target
         if target_value and current_value and current_value > target_value:
@@ -208,6 +209,7 @@ class UserGoalForm(forms.ModelForm):
                 })
         
         return cleaned_data
+
 
 class BudgetForm(forms.ModelForm):
     class Meta:
