@@ -102,6 +102,7 @@
                             {{ form.unit.errors }}
                         </div>
                         {% endif %}
+                        <p class="text-xs text-gray-500 mt-1">Examples: g, kg, ml, l, pieces, cups, tbsp, tsp</p>
                     </div>
                 </div>
             </div>
@@ -374,6 +375,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (purchaseDateField && !purchaseDateField.value) {
         const today = new Date().toISOString().split('T')[0];
         purchaseDateField.value = today;
+    }
+    
+    // Auto-set expiry date to 7 days from today if not set
+    const expiryDateField = document.querySelector('input[type="date"][name="expiry_date"]');
+    if (expiryDateField && !expiryDateField.value) {
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        expiryDateField.value = nextWeek.toISOString().split('T')[0];
     }
     
     // Add error classes to form fields with errors

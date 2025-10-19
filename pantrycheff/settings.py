@@ -136,17 +136,17 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 # DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
-STORAGES = {
-    # Media files storage configuration
-    'default': {
-        'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
-    },
+# STORAGES = {
+#     # Media files storage configuration
+#     # 'default': {
+#     #     'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+#     # },
     
-    # CSS and JS file management
-    'staticfiles': {
-        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
-    },
-}
+#     # CSS and JS file management
+#     'staticfiles': {
+#         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+#     },
+# }
 
 # Trusted origins
 CSRF_TRUSTED_ORIGINS = []

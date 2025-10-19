@@ -5,7 +5,7 @@ class PantryItemForm(forms.ModelForm):
     class Meta:
         model = UserPantry
         fields = [
-            'ingredient', 'custom_name', 'quantity', 'unit', 
+            'ingredient', 'custom_name', 'quantity', 'unit',
             'purchase_date', 'expiry_date', 'price',
             'product_image', 'expiry_label_image', 'notes'
         ]
@@ -20,12 +20,13 @@ class PantryItemForm(forms.ModelForm):
             }),
             'quantity': forms.NumberInput(attrs={
                 'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
-                'step': '0.01', 
+                'step': '0.01',
                 'min': '0'
             }),
-            'unit': forms.Select(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors appearance-none bg-no-repeat bg-right pr-10',
-                'style': "background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 20 20\"><path stroke=\"%236b7280\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"m6 8 4 4 4-4\"/></svg>'); background-position: right 0.75rem center; background-size: 1.5em 1.5em;"
+            # Change unit from Select to TextInput
+            'unit': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
+                'placeholder': 'Enter unit (e.g., grams, bottles, packs, cups)'
             }),
             'purchase_date': forms.DateInput(attrs={
                 'type': 'date',
@@ -37,12 +38,12 @@ class PantryItemForm(forms.ModelForm):
             }),
             'price': forms.NumberInput(attrs={
                 'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
-                'step': '0.01', 
+                'step': '0.01',
                 'min': '0'
             }),
             'notes': forms.Textarea(attrs={
                 'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-vertical min-h-[100px]',
-                'rows': 2, 
+                'rows': 2,
                 'placeholder': 'Any additional notes...'
             }),
             'product_image': forms.FileInput(attrs={
@@ -52,15 +53,10 @@ class PantryItemForm(forms.ModelForm):
                 'class': 'absolute inset-0 w-full h-full opacity-0 cursor-pointer'
             }),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['unit'].choices = [
-            ('g', 'grams'), ('kg', 'kilograms'), 
-            ('ml', 'milliliters'), ('l', 'liters'),
-            ('pieces', 'pieces'), ('cups', 'cups'),
-            ('tbsp', 'tablespoons'), ('tsp', 'teaspoons')
-        ]
+
 
 class ManualIngredientForm(forms.Form):
     name = forms.CharField(max_length=200, widget=forms.TextInput(attrs={

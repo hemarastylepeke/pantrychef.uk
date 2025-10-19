@@ -128,7 +128,7 @@ def add_pantry_item_view(request):
             
             pantry_item.save()
             messages.success(request, f'{pantry_item.ingredient.name} added to pantry!')
-            return redirect('core:pantry_dashboard')
+            return redirect('pantry_dashboard')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
