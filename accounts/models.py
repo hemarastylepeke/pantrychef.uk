@@ -81,8 +81,8 @@ class UserProfile(models.Model):
         blank=True, 
         help_text="e.g., vegetarian, vegan, gluten-free"
     )
-    disliked_ingredients = models.JSONField(default=list, blank=True)
-    preferred_cuisines = models.JSONField(default=list, blank=True)
+    disliked_ingredients = models.TextField(blank=True, null=True)
+    preferred_cuisines = models.TextField(blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

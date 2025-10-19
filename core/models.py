@@ -27,7 +27,7 @@ class Ingredient(models.Model):
     storage_instructions = models.TextField(blank=True)
     
     # Nutritional information per 100g
-    nutritional_info = models.CharField(max_length=200)  # {calories: 50, protein: 2.5, carbs: 10, ...}
+    nutritional_info = models.TextField(max_length=200)  # e.g., "Calories: 52, Protein: 0.3g, Carbs: 14g, Fat: 0.2g"
     
     # Common units for this ingredient
     common_units = models.CharField(max_length=50)  # ['g', 'kg', 'pieces', 'ml', 'l']
@@ -105,8 +105,7 @@ class Recipe(models.Model):
         ('MEDIUM', 'Medium'),
         ('HARD', 'Hard'),
     ]
-    
-    # More cuisines can be added based on target user base
+
     CUISINE_CHOICES = [
         ('kenyan', 'Kenyan'),
         ('italian', 'Italian'),
@@ -121,7 +120,7 @@ class Recipe(models.Model):
         ('japanese', 'Japanese'),
         ('other', 'Other'),
     ]
-    
+
     name = models.CharField(max_length=200)
     description = models.TextField()
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_LEVELS)
@@ -129,29 +128,19 @@ class Recipe(models.Model):
     cook_time = models.IntegerField(help_text="Cooking time in minutes")
     cuisine = models.CharField(max_length=50, choices=CUISINE_CHOICES)
     servings = models.IntegerField()
-    
-    # Ingredients with quantities
-    ingredients = models.JSONField(default=list)  # [{ingredient_id: 1, quantity: 200, unit: 'g', name: 'Tomatoes'}, ...]
-    
-    # Step-by-step instructions
-    instructions = models.JSONField(default=list)  # [{step: 1, instruction: 'Chop vegetables', duration: 5}, ...]
-    
-    # Nutritional information per serving
-    nutritional_info = models.JSONField(default=dict)  # {calories: 350, protein: 20, ...}
-    
-    # Dietary tags for filtering
-    dietary_tags = models.JSONField(default=list)  # ['vegetarian', 'gluten-free', 'high-protein']
-    
-    # Images
+
+    ingredients = models.TextField()
+    instructions = models.TextField()
+    nutritional_info = models.TextField(blank=True, null=True)
+    dietary_tags = models.TextField(blank=True, null=True)
+
     image = models.ImageField(upload_to='recipe_images/', blank=True, null=True)
-    
-    # Ratings and popularity
     average_rating = models.FloatField(default=0)
     rating_count = models.IntegerField(default=0)
-    
+
     created_by = models.ForeignKey(UserAccount, on_delete=models.SET_NULL, null=True, blank=True)
     is_ai_generated = models.BooleanField(default=False)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -160,7 +149,6 @@ class Recipe(models.Model):
         indexes = [
             models.Index(fields=['cuisine']),
             models.Index(fields=['difficulty']),
-            models.Index(fields=['dietary_tags']),
         ]
 
     def __str__(self):

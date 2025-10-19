@@ -137,18 +137,7 @@ class DietaryRequirementsForm(forms.ModelForm):
         model = UserProfile
         fields = ['allergies', 'dietary_restrictions', 'disliked_ingredients', 'preferred_cuisines']
     
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        
-        # Convert comma-separated disliked ingredients to list
-        disliked_text = self.cleaned_data.get('disliked_ingredients', '')
-        if disliked_text:
-            disliked_list = [ingredient.strip().lower() for ingredient in disliked_text.split(',') if ingredient.strip()]
-            instance.disliked_ingredients = disliked_list
-        
-        if commit:
-            instance.save()
-        return instance
+    
 
 class UserGoalForm(forms.ModelForm):
     class Meta:
