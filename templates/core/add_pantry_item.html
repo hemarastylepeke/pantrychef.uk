@@ -20,7 +20,7 @@
     {% if messages %}
     <div class="mb-8 space-y-3">
         {% for message in messages %}
-        <div class="{% if message.tags == 'success' %}bg-green-50 border-l-4 border-green-500 text-green-700{% elif message.tags == 'error' %}bg-red-50 border-l-4 border-red-500 text-red-700{% elif message.tags == 'warning' %}bg-amber-50 border-l-4 border-amber-500 text-amber-700{% else %}bg-blue-50 border-l-4 border-blue-500 text-blue-700{% endif %} rounded-r-lg p-4 shadow-sm">
+        <div class="{% if message.tags == 'success' %}bg-green-50 border border-green-200 text-green-800{% elif message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800{% elif message.tags == 'warning' %}bg-amber-50 border border-amber-200 text-amber-800{% else %}bg-blue-50 border border-blue-200 text-blue-800{% endif %} rounded-lg p-4">
             <div class="flex items-center">
                 <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-times-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} mr-3"></i>
                 <span class="font-medium">{{ message }}</span>
@@ -31,17 +31,17 @@
     {% endif %}
 
     <!-- Form Card -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-100">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
             <h2 class="text-lg font-semibold text-gray-800">Add New Pantry Item</h2>
             <p class="text-sm text-gray-600 mt-1">Fill in the details below to add an item to your pantry</p>
         </div>
         
-        <form method="post" enctype="multipart/form-data" class="p-8 space-y-8">
+        <form method="post" enctype="multipart/form-data" class="p-6 space-y-8">
             {% csrf_token %}
             
             <!-- Basic Information Section -->
-            <div class="space-y-6">
+            <div class="space-y-6 p-4 border border-gray-100 rounded-lg bg-gray-50">
                 <div class="flex items-center">
                     <div class="w-1.5 h-6 bg-green-500 rounded-full mr-3"></div>
                     <h2 class="text-lg font-semibold text-gray-900">Basic Information</h2>
@@ -49,7 +49,7 @@
                 
                 <!-- Ingredient Field -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
                         Ingredient <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
@@ -59,7 +59,7 @@
                         </div>
                     </div>
                     {% if form.ingredient.errors %}
-                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
                         {{ form.ingredient.errors }}
                     </div>
                     {% endif %}
@@ -67,38 +67,38 @@
 
                 <!-- Custom Name Field -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
                         Custom Name (optional)
                     </label>
                     {{ form.custom_name }}
                     {% if form.custom_name.errors %}
-                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
                         {{ form.custom_name.errors }}
                     </div>
                     {% endif %}
                 </div>
 
                 <!-- Quantity and Unit Row -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
                             Quantity <span class="text-red-500">*</span>
                         </label>
                         {{ form.quantity }}
                         {% if form.quantity.errors %}
-                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
                             {{ form.quantity.errors }}
                         </div>
                         {% endif %}
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
                             Unit <span class="text-red-500">*</span>
                         </label>
                         {{ form.unit }}
                         {% if form.unit.errors %}
-                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
                             {{ form.unit.errors }}
                         </div>
                         {% endif %}
@@ -107,15 +107,15 @@
             </div>
 
             <!-- Date Information Section -->
-            <div class="space-y-6">
+            <div class="space-y-6 p-4 border border-gray-100 rounded-lg bg-gray-50">
                 <div class="flex items-center">
                     <div class="w-1.5 h-6 bg-blue-500 rounded-full mr-3"></div>
                     <h2 class="text-lg font-semibold text-gray-900">Date Information</h2>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
                             Purchase Date <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
@@ -125,14 +125,14 @@
                             </div>
                         </div>
                         {% if form.purchase_date.errors %}
-                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
                             {{ form.purchase_date.errors }}
                         </div>
                         {% endif %}
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
                             Expiry Date <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
@@ -142,7 +142,7 @@
                             </div>
                         </div>
                         {% if form.expiry_date.errors %}
-                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
                             {{ form.expiry_date.errors }}
                         </div>
                         {% endif %}
@@ -151,7 +151,7 @@
             </div>
 
             <!-- Additional Information Section -->
-            <div class="space-y-6">
+            <div class="space-y-6 p-4 border border-gray-100 rounded-lg bg-gray-50">
                 <div class="flex items-center">
                     <div class="w-1.5 h-6 bg-purple-500 rounded-full mr-3"></div>
                     <h2 class="text-lg font-semibold text-gray-900">Additional Information</h2>
@@ -159,7 +159,7 @@
                 
                 <!-- Price Field -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
                         Price (optional)
                     </label>
                     <div class="relative">
@@ -169,47 +169,47 @@
                         </div>
                     </div>
                     {% if form.price.errors %}
-                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
                         {{ form.price.errors }}
                     </div>
                     {% endif %}
                 </div>
 
                 <!-- Image Upload Fields -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
                             Product Image (optional)
                         </label>
                         <div class="file-upload-container">
                             {{ form.product_image }}
                             <div class="file-upload-content">
-                                <i class="fas fa-cloud-upload-alt text-gray-400 text-xl mb-3"></i>
+                                <i class="fas fa-cloud-upload-alt text-gray-400 text-xl mb-2"></i>
                                 <p class="text-sm font-medium text-gray-700">Upload product image</p>
                                 <p class="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
                             </div>
                         </div>
                         {% if form.product_image.errors %}
-                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
                             {{ form.product_image.errors }}
                         </div>
                         {% endif %}
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
                             Expiry Label Image (optional)
                         </label>
                         <div class="file-upload-container">
                             {{ form.expiry_label_image }}
                             <div class="file-upload-content">
-                                <i class="fas fa-barcode text-gray-400 text-xl mb-3"></i>
+                                <i class="fas fa-barcode text-gray-400 text-xl mb-2"></i>
                                 <p class="text-sm font-medium text-gray-700">Upload expiry label</p>
                                 <p class="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
                             </div>
                         </div>
                         {% if form.expiry_label_image.errors %}
-                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
                             {{ form.expiry_label_image.errors }}
                         </div>
                         {% endif %}
@@ -218,12 +218,12 @@
 
                 <!-- Notes Field -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
                         Notes (optional)
                     </label>
                     {{ form.notes }}
                     {% if form.notes.errors %}
-                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
                         {{ form.notes.errors }}
                     </div>
                     {% endif %}
@@ -231,12 +231,12 @@
             </div>
 
             <!-- Form Actions -->
-            <div class="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-100">
-                <button type="submit" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-3.5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md">
+            <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+                <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center shadow-sm border border-green-600">
                     <i class="fas fa-plus mr-2"></i>
                     Add to Pantry
                 </button>
-                <a href="{% url 'pantry_dashboard' %}" class="flex-1 bg-white hover:bg-gray-50 text-gray-700 font-medium py-3.5 px-6 rounded-xl transition-all duration-200 text-center flex items-center justify-center border border-gray-200 shadow-sm hover:shadow">
+                <a href="{% url 'pantry_dashboard' %}" class="flex-1 bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors text-center flex items-center justify-center border border-gray-300 shadow-sm">
                     <i class="fas fa-times mr-2"></i>
                     Cancel
                 </a>
@@ -245,26 +245,15 @@
     </div>
 
     <!-- Quick Tips -->
-    <div class="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+    <div class="mt-8 bg-blue-50 rounded-lg p-4 border border-blue-200">
         <div class="flex items-start">
-            <div class="bg-blue-100 p-2 rounded-lg mr-4">
-                <i class="fas fa-lightbulb text-blue-600"></i>
-            </div>
+            <i class="fas fa-lightbulb text-blue-500 mt-1 mr-3"></i>
             <div>
                 <h3 class="font-semibold text-blue-900">Quick Tips</h3>
-                <ul class="text-sm text-blue-800 mt-3 space-y-2">
-                    <li class="flex items-start">
-                        <span class="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                        <span>Take photos of expiry labels for automatic date detection</span>
-                    </li>
-                    <li class="flex items-start">
-                        <span class="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                        <span>Use consistent units (grams, milliliters, pieces) for better tracking</span>
-                    </li>
-                    <li class="flex items-start">
-                        <span class="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                        <span>Regular price tracking helps with budget management</span>
-                    </li>
+                <ul class="text-sm text-blue-800 mt-2 space-y-1">
+                    <li>• Take photos of expiry labels for automatic date detection</li>
+                    <li>• Use consistent units (grams, milliliters, pieces) for better tracking</li>
+                    <li>• Regular price tracking helps with budget management</li>
                 </ul>
             </div>
         </div>
@@ -276,12 +265,11 @@
 input, select, textarea {
     width: 100%;
     padding: 0.75rem 1rem;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
     background-color: white;
     transition: all 0.2s;
     font-size: 0.95rem;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 input:focus, select:focus, textarea:focus {
@@ -293,9 +281,9 @@ input:focus, select:focus, textarea:focus {
 /* File upload styling */
 .file-upload-container {
     position: relative;
-    border: 1.5px dashed #d1d5db;
-    border-radius: 0.75rem;
-    padding: 2rem 1rem;
+    border: 1px dashed #d1d5db;
+    border-radius: 0.5rem;
+    padding: 1.5rem 1rem;
     text-align: center;
     transition: all 0.2s;
     background-color: #f9fafb;
@@ -349,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const fileName = this.files[0].name;
                 const contentDiv = container.querySelector('.file-upload-content');
                 contentDiv.innerHTML = `
-                    <i class="fas fa-check-circle text-green-500 text-xl mb-3"></i>
+                    <i class="fas fa-check-circle text-green-500 text-xl mb-2"></i>
                     <p class="text-sm font-medium text-gray-700 truncate">${fileName}</p>
                     <p class="text-xs text-gray-500 mt-1">Click to change</p>
                 `;
