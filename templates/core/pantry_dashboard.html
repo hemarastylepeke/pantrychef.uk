@@ -47,7 +47,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'scan_ingredient' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                    <a href="" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
                         <i class="fas fa-camera mr-3"></i>
                         <span>Scan Items</span>
                     </a>
@@ -190,8 +190,8 @@
                                     </p>
                                 </div>
                                 <div class="flex space-x-2">
-                                    <a href="{% url 'core:log_consumption' item.id %}" class="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-green-600">Use Now</a>
-                                    <a href="{% url 'core:record_waste' item.id %}" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">Log Waste</a>
+                                    <a href="{% url 'log_consumption' item.id %}" class="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-green-600">Use Now</a>
+                                    <a href="{% url 'record_waste' item.id %}" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">Log Waste</a>
                                 </div>
                             </div>
                             {% empty %}

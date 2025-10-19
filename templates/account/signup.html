@@ -1,3 +1,4 @@
+{% extends 'core/base_login.html' %}
 {% load i18n %}
 {% load static %}
 
@@ -7,9 +8,9 @@
             <form method="POST" class="px-3 rounded-2xl w-full max-w-md border flex flex-col border-slate-200 dark:border-slate-700 py-5">
                 {% csrf_token %}
                 <div class="flex justify-center items-center">
-                    <img src="{% static 'images/logo.png' %}" alt="I AM logo" class="h-24 w-24">
+                    <img src="{% static 'images/logo.png' %}" alt="Pantry cheff logo" class="h-24 w-24">
                 </div>
-                <h2 class="text-center justify-center font-barlow font-semibold text-slate-900 dark:text-slate-50 text-xl mb-5 mt-5">
+                <h2 class="text-center justify-center font-barlow font-semibold text-slate-900 text-xl mb-5 mt-5">
                     Sign Up
                 </h2>
                 <!-- Form field errors -->
@@ -47,16 +48,16 @@
                     </div>
                 {% endif %}
                 <div class=" mb-6">
-                    <label for="id_email" class="block mb-2 text-sm font-medium text-slate-900 dark:text-slate-50 font-barlow">Email address</label>
+                    <label for="id_email" class="block mb-2 text-sm font-medium text-slate-900 font-barlow">Email address</label>
                     <input type="email" name="email" id="id_email" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-[5px] focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500" placeholder="Email address" autocomplete="email" maxlength="320"  required />
                 </div>
                 <div class="flex flex-col md:flex-row gap-3 mb-6">
                     <div class="w-full mb-3 md:mb-0">
-                        <label for="id_password1" class="block mb-2 text-sm font-medium text-slate-900 dark:text-slate-50 font-barlow">Password</label>
+                        <label for="id_password1" class="block mb-2 text-sm font-medium text-slate-900  font-barlow">Password</label>
                         <input name="password1" type="password" id="id_password1" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-[5px] focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500" placeholder="•••••••••"  autocomplete="new-password" required aria-describedby="id_password1_helptext" />
                     </div> 
                     <div class="w-full">
-                        <label for="id_password2" class="block mb-2 text-sm font-medium text-slate-900 dark:text-slate-50 font-barlow">Confirm password</label>
+                        <label for="id_password2" class="block mb-2 text-sm font-medium text-slate-900 font-barlow">Confirm password</label>
                         <input name="password2" type="password" id="id_password2" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-[5px] focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500" placeholder="•••••••••" autocomplete="new-password" required />
                     </div> 
                 </div>

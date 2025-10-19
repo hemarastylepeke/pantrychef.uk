@@ -1,392 +1,334 @@
-{% extends 'core/base.html' %}
+{% extends "core/base.html" %}
 {% load static %}
 
 {% block title %}Add Item - PantryCheff{% endblock %}
 
+{% block sidebar_subtitle %}Add Item{% endblock %}
+
+{% block header_title %}Add Item to Pantry{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'pantry_dashboard' %}" class="bg-white text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center shadow-sm border border-gray-200">
+    <i class="fas fa-arrow-left mr-2"></i>
+    Back to Dashboard
+</a>
+{% endblock %}
+
 {% block content %}
-<div class="flex h-screen bg-gray-50 dark:bg-slate-900">
-    <!-- Sidebar -->
-    <div class="w-64 bg-white dark:bg-slate-800 shadow-lg flex flex-col">
-        <!-- Logo -->
-        <div class="p-6 border-b border-gray-200 dark:border-slate-700">
-            <h1 class="text-2xl font-bold text-green-600 dark:text-green-400">Pantry<span class="text-amber-500 dark:text-amber-400">Cheff</span></h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Add Item</p>
-        </div>
-
-        <!-- Navigation -->
-        <div class="flex-1 p-4">
-            <ul class="space-y-2">
-                <li>
-                    <a href="{% url 'pantry_dashboard' %}" class="flex items-center p-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
-                        <i class="fas fa-home mr-3 text-gray-400"></i>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="" class="flex items-center p-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
-                        <i class="fas fa-utensils mr-3 text-gray-400"></i>
-                        <span>Recipes</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'add_pantry_item' %}" class="flex items-center p-3 text-green-600 dark:text-green-400 rounded-lg bg-green-50 dark:bg-green-900/20 border-l-4 border-green-600">
-                        <i class="fas fa-plus mr-3 text-green-600 dark:text-green-400"></i>
-                        <span>Add Pantry Item</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="" class="flex items-center p-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
-                        <i class="fas fa-camera mr-3 text-gray-400"></i>
-                        <span>Scan Items</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="" class="flex items-center p-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
-                        <i class="fas fa-list-alt mr-3 text-gray-400"></i>
-                        <span>Shopping Lists</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'pantry_analytics' %}" class="flex items-center p-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
-                        <i class="fas fa-chart-pie mr-3 text-gray-400"></i>
-                        <span>Analytics</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
-
-        <!-- User Profile -->
-        <div class="p-4 border-t border-gray-200 dark:border-slate-700">
+<div class="max-w-3xl mx-auto">
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-8 space-y-3">
+        {% for message in messages %}
+        <div class="{% if message.tags == 'success' %}bg-green-50 border-l-4 border-green-500 text-green-700{% elif message.tags == 'error' %}bg-red-50 border-l-4 border-red-500 text-red-700{% elif message.tags == 'warning' %}bg-amber-50 border-l-4 border-amber-500 text-amber-700{% else %}bg-blue-50 border-l-4 border-blue-500 text-blue-700{% endif %} rounded-r-lg p-4 shadow-sm">
             <div class="flex items-center">
-                <div class="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white">
-                    {% if user.userprofile.profile_image %}
-                        <img src="{{ user.userprofile.profile_image }}" alt="Profile" class="w-10 h-10 rounded-full">
-                    {% else %}
-                        <i class="fas fa-user"></i>
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-times-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} mr-3"></i>
+                <span class="font-medium">{{ message }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-800">Add New Pantry Item</h2>
+            <p class="text-sm text-gray-600 mt-1">Fill in the details below to add an item to your pantry</p>
+        </div>
+        
+        <form method="post" enctype="multipart/form-data" class="p-8 space-y-8">
+            {% csrf_token %}
+            
+            <!-- Basic Information Section -->
+            <div class="space-y-6">
+                <div class="flex items-center">
+                    <div class="w-1.5 h-6 bg-green-500 rounded-full mr-3"></div>
+                    <h2 class="text-lg font-semibold text-gray-900">Basic Information</h2>
+                </div>
+                
+                <!-- Ingredient Field -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        Ingredient <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        {{ form.ingredient }}
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-carrot text-gray-400"></i>
+                        </div>
+                    </div>
+                    {% if form.ingredient.errors %}
+                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        {{ form.ingredient.errors }}
+                    </div>
                     {% endif %}
                 </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">
-                        {% if user.userprofile.first_name %}
-                            {{ user.userprofile.first_name }}
-                        {% else %}
-                            {{ user.email }}
+
+                <!-- Custom Name Field -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        Custom Name (optional)
+                    </label>
+                    {{ form.custom_name }}
+                    {% if form.custom_name.errors %}
+                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        {{ form.custom_name.errors }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Quantity and Unit Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Quantity <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.quantity }}
+                        {% if form.quantity.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                            {{ form.quantity.errors }}
+                        </div>
                         {% endif %}
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 capitalize">{{ user.userprofile.subscription_plan }} Member</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Unit <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.unit }}
+                        {% if form.unit.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                            {{ form.unit.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
-        </div>
+
+            <!-- Date Information Section -->
+            <div class="space-y-6">
+                <div class="flex items-center">
+                    <div class="w-1.5 h-6 bg-blue-500 rounded-full mr-3"></div>
+                    <h2 class="text-lg font-semibold text-gray-900">Date Information</h2>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Purchase Date <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            {{ form.purchase_date }}
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-calendar-alt text-gray-400"></i>
+                            </div>
+                        </div>
+                        {% if form.purchase_date.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                            {{ form.purchase_date.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Expiry Date <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            {{ form.expiry_date }}
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-clock text-gray-400"></i>
+                            </div>
+                        </div>
+                        {% if form.expiry_date.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                            {{ form.expiry_date.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information Section -->
+            <div class="space-y-6">
+                <div class="flex items-center">
+                    <div class="w-1.5 h-6 bg-purple-500 rounded-full mr-3"></div>
+                    <h2 class="text-lg font-semibold text-gray-900">Additional Information</h2>
+                </div>
+                
+                <!-- Price Field -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        Price (optional)
+                    </label>
+                    <div class="relative">
+                        {{ form.price }}
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <span class="text-gray-500">$</span>
+                        </div>
+                    </div>
+                    {% if form.price.errors %}
+                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        {{ form.price.errors }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Image Upload Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Product Image (optional)
+                        </label>
+                        <div class="file-upload-container">
+                            {{ form.product_image }}
+                            <div class="file-upload-content">
+                                <i class="fas fa-cloud-upload-alt text-gray-400 text-xl mb-3"></i>
+                                <p class="text-sm font-medium text-gray-700">Upload product image</p>
+                                <p class="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                            </div>
+                        </div>
+                        {% if form.product_image.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                            {{ form.product_image.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Expiry Label Image (optional)
+                        </label>
+                        <div class="file-upload-container">
+                            {{ form.expiry_label_image }}
+                            <div class="file-upload-content">
+                                <i class="fas fa-barcode text-gray-400 text-xl mb-3"></i>
+                                <p class="text-sm font-medium text-gray-700">Upload expiry label</p>
+                                <p class="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                            </div>
+                        </div>
+                        {% if form.expiry_label_image.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                            {{ form.expiry_label_image.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Notes Field -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        Notes (optional)
+                    </label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}
+                    <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        {{ form.notes.errors }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-100">
+                <button type="submit" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-3.5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add to Pantry
+                </button>
+                <a href="{% url 'pantry_dashboard' %}" class="flex-1 bg-white hover:bg-gray-50 text-gray-700 font-medium py-3.5 px-6 rounded-xl transition-all duration-200 text-center flex items-center justify-center border border-gray-200 shadow-sm hover:shadow">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancel
+                </a>
+            </div>
+        </form>
     </div>
 
-    <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Top Header -->
-        <header class="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700">
-            <div class="flex justify-between items-center px-6 py-4">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Add Item to Pantry</h2>
-                <div class="flex items-center space-x-4">
-                    <div class="relative hidden md:block">
-                        <input type="text" placeholder="Search..." class="pl-10 pr-4 py-2 w-64 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                    </div>
-                    <a href="{% url 'pantry_dashboard' %}" class="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition flex items-center">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Back
-                    </a>
-                </div>
+    <!-- Quick Tips -->
+    <div class="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+        <div class="flex items-start">
+            <div class="bg-blue-100 p-2 rounded-lg mr-4">
+                <i class="fas fa-lightbulb text-blue-600"></i>
             </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="flex-1 overflow-auto bg-gray-50 dark:bg-slate-900 p-6">
-            <div class="max-w-4xl mx-auto">
-                <!-- Messages -->
-                {% if messages %}
-                <div class="mb-6 space-y-3">
-                    {% for message in messages %}
-                    <div class="{% if message.tags == 'success' %}bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300{% elif message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300{% elif message.tags == 'warning' %}bg-amber-50 border border-amber-200 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300{% else %}bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300{% endif %} rounded-lg p-4">
-                        <div class="flex items-center">
-                            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-times-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} mr-3"></i>
-                            <span class="font-medium">{{ message }}</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                <!-- Form Card -->
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
-                    <form method="post" enctype="multipart/form-data" class="p-6 space-y-6">
-                        {% csrf_token %}
-                        
-                        <!-- Basic Information Section -->
-                        <div class="space-y-6">
-                            <h2 class="text-xl font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-slate-700 pb-2">Basic Information</h2>
-                            
-                            <!-- Ingredient Field -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Ingredient <span class="text-red-500">*</span>
-                                </label>
-                                <div class="relative">
-                                    {{ form.ingredient }}
-                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                        <i class="fas fa-carrot text-gray-400"></i>
-                                    </div>
-                                </div>
-                                {% if form.ingredient.errors %}
-                                <div class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                    {{ form.ingredient.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Custom Name Field -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Custom Name (optional)
-                                </label>
-                                {{ form.custom_name }}
-                                {% if form.custom_name.errors %}
-                                <div class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                    {{ form.custom_name.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Quantity and Unit Row -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Quantity <span class="text-red-500">*</span>
-                                    </label>
-                                    {{ form.quantity }}
-                                    {% if form.quantity.errors %}
-                                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {{ form.quantity.errors }}
-                                    </div>
-                                    {% endif %}
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Unit <span class="text-red-500">*</span>
-                                    </label>
-                                    {{ form.unit }}
-                                    {% if form.unit.errors %}
-                                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {{ form.unit.errors }}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Date Information Section -->
-                        <div class="space-y-6">
-                            <h2 class="text-xl font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-slate-700 pb-2">Date Information</h2>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Purchase Date <span class="text-red-500">*</span>
-                                    </label>
-                                    <div class="relative">
-                                        {{ form.purchase_date }}
-                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                            <i class="fas fa-calendar-alt text-gray-400"></i>
-                                        </div>
-                                    </div>
-                                    {% if form.purchase_date.errors %}
-                                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {{ form.purchase_date.errors }}
-                                    </div>
-                                    {% endif %}
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Expiry Date <span class="text-red-500">*</span>
-                                    </label>
-                                    <div class="relative">
-                                        {{ form.expiry_date }}
-                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                            <i class="fas fa-clock text-gray-400"></i>
-                                        </div>
-                                    </div>
-                                    {% if form.expiry_date.errors %}
-                                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {{ form.expiry_date.errors }}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Additional Information Section -->
-                        <div class="space-y-6">
-                            <h2 class="text-xl font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-slate-700 pb-2">Additional Information</h2>
-                            
-                            <!-- Price Field -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Price (optional)
-                                </label>
-                                <div class="relative">
-                                    {{ form.price }}
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                        <span class="text-gray-500 dark:text-gray-400">$</span>
-                                    </div>
-                                </div>
-                                {% if form.price.errors %}
-                                <div class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                    {{ form.price.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Image Upload Fields -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Product Image (optional)
-                                    </label>
-                                    <div class="border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-4 text-center hover:border-green-400 transition-colors relative">
-                                        {{ form.product_image }}
-                                        <div class="mt-2">
-                                            <i class="fas fa-camera text-gray-400 dark:text-gray-500 text-xl mb-2"></i>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400">Click to upload product image</p>
-                                        </div>
-                                    </div>
-                                    {% if form.product_image.errors %}
-                                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {{ form.product_image.errors }}
-                                    </div>
-                                    {% endif %}
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Expiry Label Image (optional)
-                                    </label>
-                                    <div class="border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-4 text-center hover:border-green-400 transition-colors relative">
-                                        {{ form.expiry_label_image }}
-                                        <div class="mt-2">
-                                            <i class="fas fa-barcode text-gray-400 dark:text-gray-500 text-xl mb-2"></i>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400">Click to upload expiry label</p>
-                                        </div>
-                                    </div>
-                                    {% if form.expiry_label_image.errors %}
-                                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {{ form.expiry_label_image.errors }}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Notes Field -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Notes (optional)
-                                </label>
-                                {{ form.notes }}
-                                {% if form.notes.errors %}
-                                <div class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                    {{ form.notes.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- Form Actions -->
-                        <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-slate-700">
-                            <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
-                                <i class="fas fa-plus mr-2"></i>
-                                Add to Pantry
-                            </button>
-                            <a href="{% url 'pantry_dashboard' %}" class="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-800 dark:text-white font-medium py-3 px-6 rounded-lg transition-colors text-center flex items-center justify-center">
-                                <i class="fas fa-times mr-2"></i>
-                                Cancel
-                            </a>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Quick Tips -->
-                <div class="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                    <div class="flex items-start">
-                        <i class="fas fa-lightbulb text-blue-500 mt-1 mr-3"></i>
-                        <div>
-                            <h3 class="font-medium text-blue-900 dark:text-blue-100">Quick Tips</h3>
-                            <ul class="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1">
-                                <li>• Take photos of expiry labels for automatic date detection</li>
-                                <li>• Use consistent units (grams, milliliters, pieces) for better tracking</li>
-                                <li>• Regular price tracking helps with budget management</li>
-                                <li>• Add custom names for items with specific brands or varieties</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+            <div>
+                <h3 class="font-semibold text-blue-900">Quick Tips</h3>
+                <ul class="text-sm text-blue-800 mt-3 space-y-2">
+                    <li class="flex items-start">
+                        <span class="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
+                        <span>Take photos of expiry labels for automatic date detection</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
+                        <span>Use consistent units (grams, milliliters, pieces) for better tracking</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
+                        <span>Regular price tracking helps with budget management</span>
+                    </li>
+                </ul>
             </div>
-        </main>
+        </div>
     </div>
 </div>
 
 <style>
-/* Custom form field styling */
+/* Form input styling */
 input, select, textarea {
-    @apply w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 0.75rem;
+    background-color: white;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-/* File input styling */
-input[type="file"] {
-    @apply absolute inset-0 w-full h-full opacity-0 cursor-pointer;
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
-/* Date input styling */
-input[type="date"] {
-    @apply pr-10;
+/* File upload styling */
+.file-upload-container {
+    position: relative;
+    border: 1.5px dashed #d1d5db;
+    border-radius: 0.75rem;
+    padding: 2rem 1rem;
+    text-align: center;
+    transition: all 0.2s;
+    background-color: #f9fafb;
+    cursor: pointer;
 }
 
-/* Number input styling */
-input[type="number"] {
-    @apply pl-12;
+.file-upload-container:hover {
+    border-color: #10b981;
+    background-color: #f0fdf4;
 }
 
-/* Select dropdown styling */
-select {
-    @apply pr-10 appearance-none bg-no-repeat bg-right;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 0.75rem center;
-    background-size: 1.5em 1.5em;
+.file-upload-container input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
 }
 
-.dark select {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+.file-upload-content {
+    pointer-events: none;
 }
 
-/* Textarea specific styling */
-textarea {
-    @apply resize-vertical min-h-[100px];
+/* Error styling */
+.error {
+    border-color: #ef4444;
 }
 
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-    .w-64 {
-        width: 100%;
-        position: fixed;
-        z-index: 40;
-        transform: translateX(-100%);
-    }
-    
-    .w-64.mobile-open {
-        transform: translateX(0);
-    }
-    
-    .flex-1 {
-        margin-left: 0;
-    }
+.error:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 </style>
 
@@ -396,15 +338,45 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileInputs = document.querySelectorAll('input[type="file"]');
     
     fileInputs.forEach(input => {
-        const container = input.closest('.border-dashed');
+        const container = input.closest('.file-upload-container');
         
         input.addEventListener('change', function(e) {
             if (this.files && this.files[0]) {
-                container.classList.add('border-green-400', 'bg-green-50', 'dark:bg-green-900/20');
-                container.classList.remove('border-gray-300', 'dark:border-slate-600');
+                container.classList.add('border-green-400', 'bg-green-50');
+                container.classList.remove('border-gray-300', 'bg-gray-50');
+                
+                // Update text to show file name
+                const fileName = this.files[0].name;
+                const contentDiv = container.querySelector('.file-upload-content');
+                contentDiv.innerHTML = `
+                    <i class="fas fa-check-circle text-green-500 text-xl mb-3"></i>
+                    <p class="text-sm font-medium text-gray-700 truncate">${fileName}</p>
+                    <p class="text-xs text-gray-500 mt-1">Click to change</p>
+                `;
             } else {
-                container.classList.remove('border-green-400', 'bg-green-50', 'dark:bg-green-900/20');
-                container.classList.add('border-gray-300', 'dark:border-slate-600');
+                container.classList.remove('border-green-400', 'bg-green-50');
+                container.classList.add('border-gray-300', 'bg-gray-50');
+            }
+        });
+        
+        // Add drag and drop functionality
+        container.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            container.classList.add('border-green-400', 'bg-green-50');
+        });
+        
+        container.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            if (!container.contains(e.relatedTarget)) {
+                container.classList.remove('border-green-400', 'bg-green-50');
+            }
+        });
+        
+        container.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) {
+                input.files = e.dataTransfer.files;
+                input.dispatchEvent(new Event('change'));
             }
         });
     });
@@ -415,28 +387,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().split('T')[0];
         purchaseDateField.value = today;
     }
-
-    // Mobile menu functionality
-    const mobileMenuButton = document.createElement('button');
-    mobileMenuButton.innerHTML = '<i class="fas fa-bars"></i>';
-    mobileMenuButton.className = 'lg:hidden fixed top-4 left-4 z-50 bg-white dark:bg-slate-800 p-2 rounded-lg shadow-md text-gray-600 dark:text-gray-300';
-    document.body.appendChild(mobileMenuButton);
-
-    const sidebar = document.querySelector('.w-64');
-    const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-30 hidden';
     
-    mobileMenuButton.addEventListener('click', function() {
-        sidebar.classList.toggle('mobile-open');
-        overlay.classList.toggle('hidden');
+    // Add error classes to form fields with errors
+    const errorFields = document.querySelectorAll('.errorlist');
+    errorFields.forEach(errorList => {
+        const field = errorList.closest('.space-y-6').querySelector('input, select, textarea');
+        if (field) {
+            field.classList.add('error');
+        }
     });
-
-    overlay.addEventListener('click', function() {
-        sidebar.classList.remove('mobile-open');
-        overlay.classList.add('hidden');
-    });
-
-    document.body.appendChild(overlay);
 });
 </script>
 {% endblock %}
