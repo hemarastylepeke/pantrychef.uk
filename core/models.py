@@ -27,10 +27,10 @@ class Ingredient(models.Model):
     storage_instructions = models.TextField(blank=True)
     
     # Nutritional information per 100g
-    nutritional_info = models.JSONField(default=dict, blank=True)  # {calories: 50, protein: 2.5, carbs: 10, ...}
+    nutritional_info = models.CharField(max_length=200)  # {calories: 50, protein: 2.5, carbs: 10, ...}
     
     # Common units for this ingredient
-    common_units = models.JSONField(default=list, blank=True)  # ['g', 'kg', 'pieces', 'ml', 'l']
+    common_units = models.CharField(max_length=50)  # ['g', 'kg', 'pieces', 'ml', 'l']
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
