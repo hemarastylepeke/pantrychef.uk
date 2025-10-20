@@ -1,6 +1,7 @@
-# Handle all the food waste reduction functionality including pantry management, shopping lists, recipes, and waste tracking
 from django.db import models
-from accounts.models import UserAccount
+from django.conf import settings
+
+User = settings.AUTH_USER_MODEL
 
 class Ingredient(models.Model):
     CATEGORY_CHOICES = [
@@ -26,11 +27,13 @@ class Ingredient(models.Model):
     typical_expiry_days = models.IntegerField(null=True, blank=True)
     storage_instructions = models.TextField(blank=True)
     
-    # Nutritional information per 100g
-    nutritional_info = models.TextField(max_length=200)  # e.g., "Calories: 52, Protein: 0.3g, Carbs: 14g, Fat: 0.2g"
+    calories = models.FloatField(help_text="Calories per 100g")
+    protein = models.FloatField(help_text="Protein in grams per 100g")
+    carbs = models.FloatField(help_text="Carbohydrates in grams per 100g")
+    fat = models.FloatField(help_text="Fat in grams per 100g")
+    fiber = models.FloatField(default=0, help_text="Fiber in grams per 100g")
     
-    # Common units for this ingredient
-    common_units = models.CharField(max_length=50)  # ['g', 'kg', 'pieces', 'ml', 'l']
+    common_units = models.CharField(max_length=50, default="g")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -45,8 +48,11 @@ class Ingredient(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def get_nutritional_info(self):
+        return f"Calories: {self.calories}, Protein: {self.protein}g, Carbs: {self.carbs}g, Fat: {self.fat}g"
 
-# Tracks quantity and status of ingredients that a user has in their pantry (pantry==fridge+cupboard)
+
 class UserPantry(models.Model):
     STATUS_CHOICES = [
         ('active', 'Active'),
@@ -55,20 +61,18 @@ class UserPantry(models.Model):
         ('expired', 'Expired'),
     ]
     
-    user = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    custom_name = models.CharField(max_length=200, blank=True)  # User's custom name
+    custom_name = models.CharField(max_length=200, blank=True)
     quantity = models.FloatField()
     unit = models.CharField(max_length=20)
     purchase_date = models.DateField()
     expiry_date = models.DateField()
     price = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     
-    # Image handling
     product_image = models.ImageField(upload_to='pantry_images/', blank=True, null=True)
     expiry_label_image = models.ImageField(upload_to='expiry_labels/', blank=True, null=True)
     
-    # Detection data
     detected_expiry_text = models.TextField(blank=True)
     detection_confidence = models.FloatField(null=True, blank=True)
     detection_source = models.CharField(
@@ -97,13 +101,14 @@ class UserPantry(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.email} - {self.ingredient.name}"
+        return f"{self.user.username} - {self.ingredient.name}"
+
 
 class Recipe(models.Model):
     DIFFICULTY_LEVELS = [
-        ('EASY', 'Easy'),
-        ('MEDIUM', 'Medium'),
-        ('HARD', 'Hard'),
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
     ]
 
     CUISINE_CHOICES = [
@@ -131,14 +136,19 @@ class Recipe(models.Model):
 
     ingredients = models.TextField()
     instructions = models.TextField()
-    nutritional_info = models.TextField(blank=True, null=True)
-    dietary_tags = models.TextField(blank=True, null=True)
+    
+    total_calories = models.FloatField(null=True, blank=True)
+    total_protein = models.FloatField(null=True, blank=True)
+    total_carbs = models.FloatField(null=True, blank=True)
+    total_fat = models.FloatField(null=True, blank=True)
+    
+    dietary_tags = models.CharField(max_length=200, blank=True)
 
     image = models.ImageField(upload_to='recipe_images/', blank=True, null=True)
     average_rating = models.FloatField(default=0)
     rating_count = models.IntegerField(default=0)
 
-    created_by = models.ForeignKey(UserAccount, on_delete=models.SET_NULL, null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     is_ai_generated = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -149,10 +159,12 @@ class Recipe(models.Model):
         indexes = [
             models.Index(fields=['cuisine']),
             models.Index(fields=['difficulty']),
+            models.Index(fields=['average_rating']),
         ]
 
     def __str__(self):
         return self.name
+
 
 class ShoppingList(models.Model):
     STATUS_CHOICES = [
@@ -163,19 +175,18 @@ class ShoppingList(models.Model):
         ('cancelled', 'Cancelled'),
     ]
     
-    user = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=200, default="Weekly Shopping List")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     
-    # Budget information
     budget_limit = models.DecimalField(max_digits=10, decimal_places=2)
     total_estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_actual_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
-    # AI generation metrics
-    ai_metrics = models.JSONField(default=dict, blank=True)  # {pantry_utilization: 0.75, goal_alignment: 0.9, ...}
+    pantry_utilization = models.FloatField(default=0)
+    goal_alignment = models.FloatField(default=0)
+    waste_reduction_score = models.FloatField(default=0)
     
-    # Period tracking
     week_number = models.IntegerField(null=True, blank=True)
     month = models.IntegerField(null=True, blank=True)
     year = models.IntegerField()
@@ -192,9 +203,9 @@ class ShoppingList(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.email} - {self.name} - {self.created_at.date()}"
- 
-# Items within a shopping list
+        return f"{self.user.username} - {self.name} - {self.created_at.date()}"
+
+
 class ShoppingListItem(models.Model):
     PRIORITY_CHOICES = [
         ('high', 'High Priority'),
@@ -205,20 +216,19 @@ class ShoppingListItem(models.Model):
     shopping_list = models.ForeignKey(ShoppingList, on_delete=models.CASCADE, related_name='items')
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     quantity = models.FloatField()
-    unit = models.CharField(max_length=20) # e.g., g, kg, pieces, ml
+    unit = models.CharField(max_length=20)
     estimated_price = models.DecimalField(max_digits=8, decimal_places=2)
     actual_price = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     purchased = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
-    
-    # Reason for inclusion
-    reason = models.CharField(max_length=200, blank=True)  # e.g., "for pasta recipe", "restocking"
+    reason = models.CharField(max_length=200, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['priority', 'ingredient__name']
+
 
 class FoodWasteRecord(models.Model):
     WASTE_REASONS = [
@@ -230,7 +240,7 @@ class FoodWasteRecord(models.Model):
         ('other', 'Other'),
     ]
     
-    user = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     original_quantity = models.FloatField()
     quantity_wasted = models.FloatField()
@@ -239,7 +249,6 @@ class FoodWasteRecord(models.Model):
     reason = models.CharField(max_length=50, choices=WASTE_REASONS)
     reason_details = models.TextField(blank=True)
     
-    # dates to track when it was purchased, expiry date, and when it was wasted
     purchase_date = models.DateField()
     expiry_date = models.DateField()
     waste_date = models.DateField(auto_now_add=True)
@@ -253,11 +262,11 @@ class FoodWasteRecord(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.email} - {self.ingredient.name} waste"
+        return f"{self.user.username} - {self.ingredient.name} waste"
+
 
 class ConsumptionRecord(models.Model):
-    """Track when users consume ingredients through recipes"""
-    user = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     pantry_item = models.ForeignKey(UserPantry, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.SET_NULL, null=True, blank=True)
     quantity_used = models.FloatField()
@@ -269,8 +278,8 @@ class ConsumptionRecord(models.Model):
     class Meta:
         ordering = ['-date_consumed']
 
+
 class ImageProcessingJob(models.Model):
-    """Track image processing jobs for expiry date detection"""
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('processing', 'Processing'),
@@ -278,14 +287,13 @@ class ImageProcessingJob(models.Model):
         ('failed', 'Failed'),
     ]
     
-    user = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     image = models.ImageField(upload_to='processing_jobs/')
     job_type = models.CharField(max_length=20, choices=[('expiry', 'Expiry Date'), ('ingredient', 'Ingredient ID')])
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
-    # Results
     detected_text = models.TextField(blank=True)
-    processed_data = models.JSONField(default=dict, blank=True)  # {expiry_date: '2024-01-15', confidence: 0.85}
+    processed_data = models.TextField(blank=True)
     error_message = models.TextField(blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -293,3 +301,66 @@ class ImageProcessingJob(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+class UserGoal(models.Model):
+    GOAL_TYPES = [
+        ('lose_weight', 'Lose Weight'),
+        ('gain_weight', 'Gain Weight'),
+        ('build_muscle', 'Build Muscle'),
+        ('maintain_weight', 'Maintain Weight'),
+        ('more_fiber', 'More Fiber'),
+        ('more_iron', 'More Iron'),
+        ('more_veggies', 'More Vegetables'),
+        ('reduce_waste', 'Reduce Food Waste'),
+        ('budget_friendly', 'Budget Friendly'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    goal_type = models.CharField(max_length=20, choices=GOAL_TYPES)
+    target_value = models.FloatField(null=True, blank=True)
+    current_value = models.FloatField(null=True, blank=True)
+    start_date = models.DateField(auto_now_add=True)
+    target_date = models.DateField(null=True, blank=True)
+    active = models.BooleanField(default=True)
+    priority = models.IntegerField(default=1)
+    bmi = models.FloatField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['priority', '-created_at']
+
+
+class Budget(models.Model):
+    PERIOD_CHOICES = [
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+    ]
+    
+    CURRENCY_CHOICES = [
+        ('USD', 'USD'),
+        ('EUR', 'EUR'),
+        ('GBP', 'GBP'),
+        ('KES', 'KES'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    period = models.CharField(max_length=10, choices=PERIOD_CHOICES, default='weekly')
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='USD')
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    active = models.BooleanField(default=True)
+    amount_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-start_date']
+        indexes = [
+            models.Index(fields=['user', 'active']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.amount} {self.currency}/{self.period}"

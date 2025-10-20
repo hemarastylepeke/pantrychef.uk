@@ -1,23 +1,14 @@
 from django.urls import path, include
-from .views import (
-    profile_page_view, 
-    edit_goal_view, 
-    delete_goal_view,
-    update_goal_progress_ajax,
-    quick_budget_update_ajax
-)
+from . import views
 
 urlpatterns = [
-    # Main profile page with all functionality
-    path('profile/', profile_page_view, name='profile_page'),
-    
-    # Goal management
-    path('goals/<int:goal_id>/edit/', edit_goal_view, name='edit_goal'),
-    path('goals/<int:goal_id>/delete/', delete_goal_view, name='delete_goal'),
-    
-    # AJAX endpoints for dynamic updates
-    path('goals/<int:goal_id>/update-progress/', update_goal_progress_ajax, name='update_goal_progress'),
-    path('budget/quick-update/', quick_budget_update_ajax, name='quick_budget_update'),
+    path('create-profile/', views.create_profile_view, name='create_profile'),
+
+    # View & update profile
+    path('profile/', views.profile_page_view, name='profile_page'),
+
+    # Delete profile
+    path('profile/delete/', views.delete_profile_view, name='delete_profile'),
 ]
 # urlpatterns = [
 #     path('accounts/login/', views.login_view, name='account_login'),
