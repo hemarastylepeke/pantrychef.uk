@@ -5,10 +5,9 @@ from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
 import json
-from .models import UserPantry, Ingredient, ConsumptionRecord, FoodWasteRecord, ImageProcessingJob, Recipe
+from .models import UserPantry, Ingredient, ConsumptionRecord, FoodWasteRecord, ImageProcessingJob, Recipe, Budget
 from .forms import PantryItemForm, ManualIngredientForm, ConsumptionForm, WasteRecordForm
 from .services.vision_service import ExpiryDateDetector
-from accounts.models import Budget
 
 @login_required(login_url='account_login')
 def pantry_dashboard_view(request):
