@@ -65,7 +65,7 @@
                     </li>
                     {% if request.user.is_authenticated %}
                         <li class="relative">
-                            <a href="{% url 'pantry_analytics' %}" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'analytics' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
+                            <a href="" class="flex items-center py-2 px-3 text-slate-900 rounded-sm hover:bg-slate-100 md:hover:bg-transparent md:hover:text-green-600 md:p-0 dark:text-white md:dark:hover:text-green-500 dark:hover:bg-slate-700 dark:hover:text-green-500 md:dark:hover:bg-transparent dark:border-slate-700 {% if 'analytics' in request.resolver_match.url_name %}text-green-600 font-semibold{% endif %}">
                                 <i class="fas fa-chart-pie mr-2 text-sm"></i>
                                 Analytics
                                 {% if expiring_count and expiring_count > 0 %}
@@ -131,7 +131,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'scan_ingredient' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                        <a href="" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
                             <i class="fas fa-camera mr-3 text-green-600"></i>
                             <div>
                                 <div class="font-semibold">Scan Item</div>
@@ -140,7 +140,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'pantry_analytics' %}" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                        <a href="" class="flex items-center p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
                             <i class="fas fa-chart-line mr-3 text-green-600"></i>
                             <div>
                                 <div class="font-semibold">Waste Analytics</div>

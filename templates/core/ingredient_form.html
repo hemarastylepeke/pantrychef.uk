@@ -1,0 +1,145 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ title }} Pantry Pilot{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-8">
+    <div class="container mx-auto px-4 max-w-4xl">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-green-500 to-blue-500 px-8 py-6">
+                <h1 class="text-2xl md:text-3xl font-bold text-white">{{ title }}</h1>
+                <p class="text-green-100 mt-2">Fill in the ingredient details below</p>
+            </div>
+
+            <!-- Form -->
+            <div class="p-8">
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Name -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-red-500 text-sm mt-1">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Category -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="text-red-500 text-sm mt-1">{{ form.category.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Barcode and Expiry -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Barcode -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Barcode</label>
+                            {{ form.barcode }}
+                            {% if form.barcode.errors %}
+                                <div class="text-red-500 text-sm mt-1">{{ form.barcode.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Typical Expiry Days -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Typical Expiry Days</label>
+                            {{ form.typical_expiry_days }}
+                            {% if form.typical_expiry_days.errors %}
+                                <div class="text-red-500 text-sm mt-1">{{ form.typical_expiry_days.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Common Units -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Common Units</label>
+                        {{ form.common_units }}
+                        {% if form.common_units.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.common_units.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Storage Instructions -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Storage Instructions</label>
+                        {{ form.storage_instructions }}
+                        {% if form.storage_instructions.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.storage_instructions.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Nutritional Information -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Nutritional Information (per 100g)</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Calories -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Calories</label>
+                                {{ form.calories }}
+                                {% if form.calories.errors %}
+                                    <div class="text-red-500 text-sm mt-1">{{ form.calories.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Protein -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Protein (g)</label>
+                                {{ form.protein }}
+                                {% if form.protein.errors %}
+                                    <div class="text-red-500 text-sm mt-1">{{ form.protein.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Carbs -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Carbs (g)</label>
+                                {{ form.carbs }}
+                                {% if form.carbs.errors %}
+                                    <div class="text-red-500 text-sm mt-1">{{ form.carbs.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Fat -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Fat (g)</label>
+                                {{ form.fat }}
+                                {% if form.fat.errors %}
+                                    <div class="text-red-500 text-sm mt-1">{{ form.fat.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Fiber -->
+                        <div class="mt-4 max-w-xs">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Fiber (g)</label>
+                            {{ form.fiber }}
+                            {% if form.fiber.errors %}
+                                <div class="text-red-500 text-sm mt-1">{{ form.fiber.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+                        <button type="submit" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 px-6 rounded-lg font-semibold transition-colors duration-200 transform hover:scale-105">
+                            {% if ingredient %}Update Ingredient{% else %}Add Ingredient{% endif %}
+                        </button>
+                        <a href="{% url 'ingredient_list' %}" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold text-center transition-colors duration-200">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

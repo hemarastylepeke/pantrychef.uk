@@ -57,12 +57,6 @@ def pantry_dashboard_view(request):
     # Get recently expired items
     expired_items = pantry_items.filter(expiry_date__lt=timezone.now().date())
     
-    # Get consumption history (last 7 days)
-    recent_consumption = ConsumptionRecord.objects.filter(
-        user=request.user, 
-        date_consumed__gte=timezone.now().date() - timedelta(days=7)
-    ).select_related('pantry_item', 'recipe').order_by('-date_consumed')[:10]
-    
     # Calculate pantry statistics
     total_items = pantry_items.count()
     total_value = sum(item.price for item in pantry_items if item.price)
@@ -92,7 +86,6 @@ def pantry_dashboard_view(request):
         'pantry_items': pantry_items,
         'expiring_soon': expiring_soon,
         'expired_items': expired_items,
-        'recent_consumption': recent_consumption,
         'total_items': total_items,
         'total_value': total_value,
         'waste_savings': waste_savings,
@@ -104,7 +97,6 @@ def pantry_dashboard_view(request):
         'recipe_suggestions': recipe_suggestions,
         'waste_tips': waste_tips,
         'pantry_form': PantryItemForm(),
-        'manual_form': ManualIngredientForm(),
     }
     return render(request, 'core/pantry_dashboard.html', context)
 
@@ -222,7 +214,7 @@ def add_ingredient_view(request):
         if form.is_valid():
             ingredient = form.save()
             messages.success(request, f'Ingredient "{ingredient.name}" added successfully!')
-            return redirect('core:ingredient_list')
+            return redirect('ingredient_list')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -247,7 +239,7 @@ def edit_ingredient_view(request, ingredient_id):
         if form.is_valid():
             updated_ingredient = form.save()
             messages.success(request, f'Ingredient "{updated_ingredient.name}" updated successfully!')
-            return redirect('core:ingredient_list')
+            return redirect('ingredient_list')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:

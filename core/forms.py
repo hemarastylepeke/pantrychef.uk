@@ -1,5 +1,5 @@
 from django import forms
-from .models import UserPantry, Ingredient, ConsumptionRecord, FoodWasteRecord, Recipe
+from .models import UserPantry, Ingredient, Recipe, Budget
 from django.utils import timezone
 
 class PantryItemForm(forms.ModelForm):
@@ -167,107 +167,46 @@ class IngredientForm(forms.ModelForm):
         return barcode
 
 
-class ConsumptionForm(forms.ModelForm):
+# Add this to your forms.py
+class BudgetForm(forms.ModelForm):
     class Meta:
-        model = ConsumptionRecord
-        fields = ['quantity_used', 'recipe', 'notes']
+        model = Budget
+        fields = ['amount', 'period', 'currency', 'start_date', 'end_date', 'active']
         widgets = {
-            'quantity_used': forms.NumberInput(attrs={
+            'amount': forms.NumberInput(attrs={
                 'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
-                'step': '0.01',
-                'min': '0.01'
-            }),
-            'recipe': forms.Select(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors appearance-none bg-no-repeat bg-right pr-10',
-                'style': "background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 20 20\"><path stroke=\"%236b7280\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"m6 8 4 4 4-4\"/></svg>'); background-position: right 0.75rem center; background-size: 1.5em 1.5em;"
-            }),
-            'notes': forms.Textarea(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-vertical min-h-[100px]',
-                'rows': 2, 
-                'placeholder': 'How was it used?'
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
-        pantry_item = kwargs.pop('pantry_item', None)
-        super().__init__(*args, **kwargs)
-        
-        # Filter recipes by user if available
-        if user:
-            self.fields['recipe'].queryset = Recipe.objects.filter(
-                models.Q(created_by=user) | models.Q(created_by__isnull=True)
-            )
-        else:
-            self.fields['recipe'].queryset = Recipe.objects.all()
-        
-        # Set max quantity based on pantry item
-        if pantry_item:
-            self.fields['quantity_used'].widget.attrs['max'] = pantry_item.quantity
-            self.fields['quantity_used'].help_text = f"Maximum available: {pantry_item.quantity} {pantry_item.unit}"
-
-    def clean_quantity_used(self):
-        quantity_used = self.cleaned_data.get('quantity_used')
-        if quantity_used <= 0:
-            raise forms.ValidationError("Quantity used must be greater than 0")
-        return quantity_used
-
-
-class WasteRecordForm(forms.ModelForm):
-    class Meta:
-        model = FoodWasteRecord
-        fields = ['quantity_wasted', 'reason', 'reason_details']
-        widgets = {
-            'quantity_wasted': forms.NumberInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
-                'step': '0.01',
-                'min': '0.01'
-            }),
-            'reason': forms.Select(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors appearance-none bg-no-repeat bg-right pr-10',
-                'style': "background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 20 20\"><path stroke=\"%236b7280\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"m6 8 4 4 4-4\"/></svg>'); background-position: right 0.75rem center; background-size: 1.5em 1.5em;"
-            }),
-            'reason_details': forms.Textarea(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-vertical min-h-[100px]',
-                'rows': 2, 
-                'placeholder': 'Why was this wasted?'
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        pantry_item = kwargs.pop('pantry_item', None)
-        super().__init__(*args, **kwargs)
-        
-        # Set max quantity based on pantry item
-        if pantry_item:
-            self.fields['quantity_wasted'].widget.attrs['max'] = pantry_item.quantity
-            self.fields['quantity_wasted'].help_text = f"Maximum available: {pantry_item.quantity} {pantry_item.unit}"
-
-    def clean_quantity_wasted(self):
-        quantity_wasted = self.cleaned_data.get('quantity_wasted')
-        if quantity_wasted <= 0:
-            raise forms.ValidationError("Quantity wasted must be greater than 0")
-        return quantity_wasted
-
-
-# Optional: Quick Edit Form for simple updates
-class QuickEditPantryForm(forms.ModelForm):
-    class Meta:
-        model = UserPantry
-        fields = ['quantity', 'expiry_date', 'notes']
-        widgets = {
-            'quantity': forms.NumberInput(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500',
                 'step': '0.01',
                 'min': '0'
             }),
-            'expiry_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500'
+            'period': forms.Select(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors appearance-none bg-no-repeat bg-right pr-10',
+                'style': "background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 20 20\"><path stroke=\"%236b7280\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"m6 8 4 4 4-4\"/></svg>'); background-position: right 0.75rem center; background-size: 1.5em 1.5em;"
             }),
-            'notes': forms.Textarea(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 resize-vertical',
-                'rows': 2,
-                'placeholder': 'Quick notes...'
+            'currency': forms.Select(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors appearance-none bg-no-repeat bg-right pr-10',
+                'style': "background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 20 20\"><path stroke=\"%236b7280\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"m6 8 4 4 4-4\"/></svg>'); background-position: right 0.75rem center; background-size: 1.5em 1.5em;"
+            }),
+            'start_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors'
+            }),
+            'end_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors'
             }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['end_date'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        
+        if start_date and end_date and end_date < start_date:
+            raise forms.ValidationError("End date cannot be before start date")
+        
+        return cleaned_data
+

@@ -1,0 +1,145 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Ingredients - Pantry Pilot{% endblock %}
+
+{% block content %}
+<div class="min-h-screen  py-8">
+    <div class="container mx-auto px-4 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Ingredients Database</h1>
+            <p class="text-lg text-gray-600 mb-6">Manage all ingredients in your system</p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <a href="{% url 'add_ingredient' %}" class="inline-flex items-center px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg shadow-md transition-all duration-200 transform hover:scale-105">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add New Ingredient
+                </a>
+                
+                <!-- Search Form -->
+                <form method="get" class="flex gap-2">
+                    <input 
+                        type="text" 
+                        name="search" 
+                        value="{{ search_query }}"
+                        placeholder="Search ingredients..." 
+                        class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent w-64"
+                    >
+                    <button type="submit" class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+                        Search
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if ingredients %}
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white rounded-lg shadow p-6 text-center">
+                    <div class="text-2xl font-bold text-green-600">{{ ingredients.count }}</div>
+                    <div class="text-gray-600">Total Ingredients</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 text-center">
+                    <div class="text-2xl font-bold text-blue-600">{{ categories_count }}</div>
+                    <div class="text-gray-600">Categories</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 text-center">
+                    <div class="text-2xl font-bold text-purple-600">{{ with_barcode_count }}</div>
+                    <div class="text-gray-600">With Barcode</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 text-center">
+                    <div class="text-2xl font-bold text-orange-600">{{ recent_count }}</div>
+                    <div class="text-gray-600">Recently Added</div>
+                </div>
+            </div>
+
+            <!-- Ingredients Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {% for ingredient in ingredients %}
+                <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 overflow-hidden">
+                    <div class="p-6">
+                        <!-- Header -->
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-xl font-semibold text-gray-800 truncate">{{ ingredient.name }}</h3>
+                            <span class="text-xs font-medium px-2 py-1 rounded-full 
+                                {% if ingredient.category == 'vegetables' %}bg-green-100 text-green-800
+                                {% elif ingredient.category == 'fruits' %}bg-yellow-100 text-yellow-800
+                                {% elif ingredient.category == 'dairy' %}bg-blue-100 text-blue-800
+                                {% elif ingredient.category == 'meat' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ ingredient.get_category_display }}
+                            </span>
+                        </div>
+                        
+                        <!-- Nutritional Info -->
+                        <div class="space-y-2 mb-4">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Calories:</span>
+                                <span class="font-medium">{{ ingredient.calories }}/100g</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Protein:</span>
+                                <span class="font-medium">{{ ingredient.protein }}g</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Carbs:</span>
+                                <span class="font-medium">{{ ingredient.carbs }}g</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Fat:</span>
+                                <span class="font-medium">{{ ingredient.fat }}g</span>
+                            </div>
+                        </div>
+
+                        <!-- Barcode -->
+                        {% if ingredient.barcode %}
+                        <div class="mb-4">
+                            <span class="text-xs text-gray-500">Barcode: {{ ingredient.barcode }}</span>
+                        </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="flex space-x-2">
+                            <a href="{% url 'ingredient_detail' ingredient.id %}" 
+                               class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-3 rounded-lg text-center transition-colors duration-200 text-sm font-medium">
+                                View
+                            </a>
+                            <a href="{% url 'edit_ingredient' ingredient.id %}" 
+                               class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-center transition-colors duration-200 text-sm font-medium">
+                                Edit
+                            </a>
+                            <a href="{% url 'delete_ingredient' ingredient.id %}" 
+                               class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-lg text-center transition-colors duration-200 text-sm font-medium">
+                                Delete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-16">
+                <div class="max-w-md mx-auto">
+                    <svg class="w-24 h-24 text-gray-300 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    <h3 class="text-2xl font-semibold text-gray-600 mb-4">No Ingredients Found</h3>
+                    <p class="text-gray-500 mb-6">
+                        {% if search_query %}
+                            No ingredients match your search "{{ search_query }}". Try a different search term.
+                        {% else %}
+                            Start by adding some ingredients to your database.
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'add_ingredient' %}" class="inline-flex items-center px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg shadow-md transition-colors duration-200">
+                        Add Your First Ingredient
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
