@@ -1,5 +1,6 @@
 from django import forms
 from .models import UserPantry, Ingredient, ConsumptionRecord, FoodWasteRecord, Recipe
+from django.utils import timezone
 
 class PantryItemForm(forms.ModelForm):
     class Meta:
@@ -63,7 +64,6 @@ class PantryItemForm(forms.ModelForm):
         
         # Set initial values for date fields if empty
         if not self.instance.pk:  # Create mode
-            from django.utils import timezone
             self.fields['purchase_date'].initial = timezone.now().date()
             self.fields['expiry_date'].initial = timezone.now().date() + timezone.timedelta(days=7)
 
@@ -81,6 +81,90 @@ class PantryItemForm(forms.ModelForm):
             raise forms.ValidationError("Expiry date cannot be before purchase date")
         
         return expiry_date
+
+
+class IngredientForm(forms.ModelForm):
+    class Meta:
+        model = Ingredient
+        fields = [
+            'name', 'category', 'barcode', 'typical_expiry_days', 
+            'storage_instructions', 'calories', 'protein', 'carbs', 
+            'fat', 'fiber', 'common_units'
+        ]
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
+                'placeholder': 'Enter ingredient name'
+            }),
+            'category': forms.Select(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors appearance-none bg-no-repeat bg-right pr-10',
+                'style': "background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 20 20\"><path stroke=\"%236b7280\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"m6 8 4 4 4-4\"/></svg>'); background-position: right 0.75rem center; background-size: 1.5em 1.5em;"
+            }),
+            'barcode': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
+                'placeholder': 'Barcode (optional)'
+            }),
+            'typical_expiry_days': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
+                'placeholder': 'Typical expiry days'
+            }),
+            'storage_instructions': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-vertical min-h-[100px]',
+                'rows': 3,
+                'placeholder': 'Storage instructions...'
+            }),
+            'calories': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
+                'step': '0.1',
+                'placeholder': 'Calories per 100g'
+            }),
+            'protein': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
+                'step': '0.1',
+                'placeholder': 'Protein per 100g'
+            }),
+            'carbs': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
+                'step': '0.1',
+                'placeholder': 'Carbs per 100g'
+            }),
+            'fat': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
+                'step': '0.1',
+                'placeholder': 'Fat per 100g'
+            }),
+            'fiber': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
+                'step': '0.1',
+                'placeholder': 'Fiber per 100g'
+            }),
+            'common_units': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
+                'placeholder': 'Common units (e.g., g, ml, pieces)'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make optional fields
+        self.fields['barcode'].required = False
+        self.fields['typical_expiry_days'].required = False
+        self.fields['storage_instructions'].required = False
+        self.fields['fiber'].required = False
+
+    def clean_calories(self):
+        calories = self.cleaned_data.get('calories')
+        if calories and calories < 0:
+            raise forms.ValidationError("Calories cannot be negative")
+        return calories
+
+    def clean_barcode(self):
+        barcode = self.cleaned_data.get('barcode')
+        if barcode:
+            # Check for duplicate barcode
+            if Ingredient.objects.filter(barcode=barcode).exclude(pk=self.instance.pk if self.instance else None).exists():
+                raise forms.ValidationError("An ingredient with this barcode already exists")
+        return barcode
 
 
 class ManualIngredientForm(forms.Form):
@@ -134,7 +218,6 @@ class ManualIngredientForm(forms.Form):
         ]
         
         # Set initial dates
-        from django.utils import timezone
         self.fields['purchase_date'].initial = timezone.now().date()
         self.fields['expiry_date'].initial = timezone.now().date() + timezone.timedelta(days=7)
 
