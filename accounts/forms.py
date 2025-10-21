@@ -3,9 +3,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate
 from allauth.account.forms import LoginForm
 from allauth.exceptions import ImmediateHttpResponse
-
 from .models import UserProfile
-
 
 class CustomLoginForm(LoginForm):
     def login(self, request, redirect_url=None):
@@ -47,8 +45,76 @@ class CustomLoginForm(LoginForm):
                 messages.error(self.request, "Authentication failed, please try again!")
             raise
 
+class CompleteUserProfileForm(forms.ModelForm):
+    """Complete form with all UserProfile fields for profile creation"""
+    class Meta:
+        model = UserProfile
+        fields = [
+            'profile_image',
+            'first_name',
+            'last_name',
+            'subscription_plan',
+            'height',
+            'weight',
+            'age',
+            'gender',
+            'activity_level',
+            'allergies',
+            'dietary_restrictions',
+            'disliked_ingredients',
+            'preferred_cuisines',
+        ]
+        widgets = {
+            'first_name': forms.TextInput(attrs={'placeholder': 'First name'}),
+            'last_name': forms.TextInput(attrs={'placeholder': 'Last name'}),
+            'subscription_plan': forms.Select(attrs={'class': 'form-select'}),
+            'height': forms.NumberInput(attrs={'step': '0.1', 'placeholder': 'Height (cm)'}),
+            'weight': forms.NumberInput(attrs={'step': '0.1', 'placeholder': 'Weight (kg)'}),
+            'age': forms.NumberInput(attrs={'min': '1', 'placeholder': 'Age'}),
+            'gender': forms.Select(attrs={'class': 'form-select'}),
+            'activity_level': forms.Select(attrs={'class': 'form-select'}),
+            'allergies': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'List any allergies (e.g., peanuts, dairy, shellfish)...'
+            }),
+            'dietary_restrictions': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Any dietary restrictions (e.g., vegan, vegetarian, halal, kosher, gluten-free)...'
+            }),
+            'disliked_ingredients': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Ingredients you prefer to avoid (e.g., cilantro, mushrooms, spicy foods)...'
+            }),
+            'preferred_cuisines': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'List your favorite cuisines (e.g., Italian, Kenyan, Thai, Mexican, Indian)...'
+            }),
+        }
+        labels = {
+            'first_name': 'First Name',
+            'last_name': 'Last Name',
+            'subscription_plan': 'Subscription Plan',
+            'height': 'Height (cm)',
+            'weight': 'Weight (kg)',
+            'age': 'Age',
+            'gender': 'Gender',
+            'activity_level': 'Activity Level',
+            'allergies': 'Allergies',
+            'dietary_restrictions': 'Dietary Restrictions',
+            'disliked_ingredients': 'Disliked Ingredients',
+            'preferred_cuisines': 'Preferred Cuisines',
+        }
+        help_texts = {
+            'height': 'Your height in centimeters',
+            'weight': 'Your weight in kilograms',
+            'activity_level': 'How active you are on a daily basis',
+            'allergies': 'Any food allergies you have',
+            'dietary_restrictions': 'Any dietary restrictions or preferences',
+            'disliked_ingredients': 'Ingredients you don\'t like or want to avoid',
+            'preferred_cuisines': 'Your favorite types of cuisine',
+        }
 
-
+# Forms for editing specific sections of the UserProfile
 class UserProfileForm(forms.ModelForm):
     """Handles general profile information such as name, image, and physical data."""
     class Meta:
@@ -74,7 +140,6 @@ class UserProfileForm(forms.ModelForm):
             'gender': forms.Select(attrs={'class': 'form-select'}),
             'activity_level': forms.Select(attrs={'class': 'form-select'}),
         }
-
 
 class DietaryRequirementsForm(forms.ModelForm):
     """Handles dietary-related information."""
@@ -102,7 +167,6 @@ class DietaryRequirementsForm(forms.ModelForm):
                 'placeholder': 'Ingredients you prefer to avoid...'
             }),
         }
-
 
 class PreferencesForm(forms.ModelForm):
     """Handles user taste preferences and cuisines."""

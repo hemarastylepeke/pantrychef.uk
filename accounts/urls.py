@@ -2,7 +2,7 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
-    path('create/profile/', views.create_profile_view, name='create_profile'),
+    path('profile/create/', views.create_profile_view, name='create_profile'),
 
     # View & update profile
     path('profile/', views.profile_page_view, name='profile_page'),

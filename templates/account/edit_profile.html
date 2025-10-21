@@ -126,26 +126,55 @@
         <input type="hidden" name="form_type" value="dietary">
 
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 class="text-xl font-semibold text-gray-800 mb-4">Dietary Information</h3>
           <div class="space-y-6">
-            {% for field in dietary_form %}
-              <div class="space-y-2">
-                <label class="block text-sm font-semibold text-gray-700">
-                  {{ field.label }}
-                  {% if field.field.required %}
-                    <span class="text-red-500 ml-1">*</span>
-                  {% endif %}
-                </label>
-                <div class="mt-1">
-                  {{ field }}
-                </div>
-                {% if field.help_text %}
-                  <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
-                {% endif %}
-                {% if field.errors %}
-                  <p class="text-sm text-red-600 mt-1 font-medium">{{ field.errors|first }}</p>
-                {% endif %}
+            <!-- Allergies -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-gray-700">
+                Allergies
+              </label>
+              <div class="mt-1">
+                <textarea 
+                  name="allergies" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  rows="4"
+                  placeholder="List any food allergies (e.g., peanuts, dairy, shellfish, gluten)..."
+                >{{ profile.allergies|default:'' }}</textarea>
               </div>
-            {% endfor %}
+              <p class="text-xs text-gray-500">Any food allergies or sensitivities you have</p>
+            </div>
+
+            <!-- Dietary Restrictions -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-gray-700">
+                Dietary Restrictions
+              </label>
+              <div class="mt-1">
+                <textarea 
+                  name="dietary_restrictions" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  rows="4"
+                  placeholder="Any dietary restrictions (e.g., vegetarian, vegan, halal, kosher, gluten-free)..."
+                >{{ profile.dietary_restrictions|default:'' }}</textarea>
+              </div>
+              <p class="text-xs text-gray-500">Your dietary preferences or restrictions</p>
+            </div>
+
+            <!-- Disliked Ingredients -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-gray-700">
+                Disliked Ingredients
+              </label>
+              <div class="mt-1">
+                <textarea 
+                  name="disliked_ingredients" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  rows="4"
+                  placeholder="Ingredients you prefer to avoid (e.g., cilantro, mushrooms, spicy foods, seafood)..."
+                >{{ profile.disliked_ingredients|default:'' }}</textarea>
+              </div>
+              <p class="text-xs text-gray-500">Foods or ingredients you don't like</p>
+            </div>
           </div>
         </div>
 
@@ -174,26 +203,57 @@
         <input type="hidden" name="form_type" value="preferences">
 
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 class="text-xl font-semibold text-gray-800 mb-4">Taste Preferences</h3>
           <div class="space-y-6">
-            {% for field in preferences_form %}
+            <!-- Preferred Cuisines -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-gray-700">
+                Preferred Cuisines
+              </label>
+              <div class="mt-1">
+                <textarea 
+                  name="preferred_cuisines" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  rows="4"
+                  placeholder="List your favorite cuisines (e.g., Italian, Kenyan, Thai, Mexican, Indian, Chinese, Mediterranean)..."
+                >{{ profile.preferred_cuisines|default:'' }}</textarea>
+              </div>
+              <p class="text-xs text-gray-500">Your favorite types of cuisine or cooking styles</p>
+            </div>
+
+            <!-- Additional Preferences Section -->
+            <div class="space-y-4">
+              <h4 class="text-lg font-semibold text-gray-800">Additional Preferences</h4>
+              
+              <!-- Spice Level Preference -->
               <div class="space-y-2">
                 <label class="block text-sm font-semibold text-gray-700">
-                  {{ field.label }}
-                  {% if field.field.required %}
-                    <span class="text-red-500 ml-1">*</span>
-                  {% endif %}
+                  Preferred Spice Level
                 </label>
-                <div class="mt-1">
-                  {{ field }}
-                </div>
-                {% if field.help_text %}
-                  <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
-                {% endif %}
-                {% if field.errors %}
-                  <p class="text-sm text-red-600 mt-1 font-medium">{{ field.errors|first }}</p>
-                {% endif %}
+                <select name="spice_level" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                  <option value="">Select spice preference</option>
+                  <option value="mild" {% if profile.spice_level == 'mild' %}selected{% endif %}>Mild</option>
+                  <option value="medium" {% if profile.spice_level == 'medium' %}selected{% endif %}>Medium</option>
+                  <option value="spicy" {% if profile.spice_level == 'spicy' %}selected{% endif %}>Spicy</option>
+                  <option value="very_spicy" {% if profile.spice_level == 'very_spicy' %}selected{% endif %}>Very Spicy</option>
+                </select>
+                <p class="text-xs text-gray-500">How spicy do you like your food?</p>
               </div>
-            {% endfor %}
+
+              <!-- Cooking Time Preference -->
+              <div class="space-y-2">
+                <label class="block text-sm font-semibold text-gray-700">
+                  Preferred Cooking Time
+                </label>
+                <select name="cooking_time" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                  <option value="">Select cooking time preference</option>
+                  <option value="quick" {% if profile.cooking_time == 'quick' %}selected{% endif %}>Quick (under 30 mins)</option>
+                  <option value="moderate" {% if profile.cooking_time == 'moderate' %}selected{% endif %}>Moderate (30-60 mins)</option>
+                  <option value="slow" {% if profile.cooking_time == 'slow' %}selected{% endif %}>Slow (over 60 mins)</option>
+                </select>
+                <p class="text-xs text-gray-500">How much time do you typically have for cooking?</p>
+              </div>
+            </div>
           </div>
         </div>
 

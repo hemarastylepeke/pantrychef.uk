@@ -9,6 +9,35 @@ from .models import UserPantry, Ingredient, ConsumptionRecord, FoodWasteRecord, 
 from .forms import PantryItemForm, ManualIngredientForm, ConsumptionForm, WasteRecordForm
 from .services.vision_service import ExpiryDateDetector
 
+# Helper functions
+def calculate_waste_savings(user):
+    """Calculate total waste savings for the user"""
+    # Implement your logic here
+    return 156  # Example value
+
+def get_recipe_suggestions(user):
+    """Get AI-powered recipe suggestions based on pantry items"""
+    # Implement your logic here
+    return [
+        {
+            'name': 'Veggie Omelette',
+            'matching_ingredients': ['eggs', 'spinach', 'tomatoes'],
+            'match_percentage': 95,
+            'prep_time': 15,
+            'calories': 320,
+            'rating': 4.5
+        },
+        {
+            'name': 'Pasta Pomodoro', 
+            'matching_ingredients': ['pasta', 'tomatoes', 'basil'],
+            'match_percentage': 88,
+            'prep_time': 25,
+            'calories': 450,
+            'rating': 4.2
+        }
+    ]
+
+# Pantry Management Views
 @login_required(login_url='account_login')
 def pantry_dashboard_view(request):
     """
@@ -38,10 +67,10 @@ def pantry_dashboard_view(request):
     total_items = pantry_items.count()
     total_value = sum(item.price for item in pantry_items if item.price)
     
-    # Calculate waste savings (you'll need to implement this logic)
+    # Calculate waste savings
     waste_savings = calculate_waste_savings(request.user)
     
-    # Recipe suggestions (you'll need to implement this logic)
+    # Recipe suggestions
     recipe_suggestions = get_recipe_suggestions(request.user)
     
     # Waste reduction tips
@@ -57,7 +86,6 @@ def pantry_dashboard_view(request):
     current_budget = Budget.objects.filter(user=request.user, active=True).first()
     budget_percentage = 0
     if current_budget:
-        # Calculate budget usage (you'll need to implement this)
         budget_percentage = min(100, int((current_budget.amount_spent / current_budget.amount) * 100))
     
     context = {
@@ -68,9 +96,9 @@ def pantry_dashboard_view(request):
         'total_items': total_items,
         'total_value': total_value,
         'waste_savings': waste_savings,
-        'waste_reduction_percentage': 24,  # You'll need to calculate this
+        'waste_reduction_percentage': 24,
         'recipes_created': Recipe.objects.filter(created_by=request.user).count(),
-        'pantry_utilization': 85,  # You'll need to calculate this
+        'pantry_utilization': 85,
         'current_budget': current_budget,
         'budget_percentage': budget_percentage,
         'recipe_suggestions': recipe_suggestions,
@@ -80,34 +108,20 @@ def pantry_dashboard_view(request):
     }
     return render(request, 'core/pantry_dashboard.html', context)
 
-# Helper functions you'll need to implement
-def calculate_waste_savings(user):
-    """Calculate total waste savings for the user"""
-    # Implement your logic here
-    return 156  # Example value
+# Pantry list item
+@login_required(login_url='account_login')
+def pantry_list_view(request):
+    """
+    list of all pantry items
+    """
+    pantry_items = UserPantry.objects.filter(user=request.user).order_by('expiry_date')
+    
+    context = {
+        'pantry_items': pantry_items,
+    }
+    return render(request, 'core/pantry_list.html', context)
 
-def get_recipe_suggestions(user):
-    """Get AI-powered recipe suggestions based on pantry items"""
-    # Implement your logic here
-    return [
-        {
-            'name': 'Veggie Omelette',
-            'matching_ingredients': ['eggs', 'spinach', 'tomatoes'],
-            'match_percentage': 95,
-            'prep_time': 15,
-            'calories': 320,
-            'rating': 4.5
-        },
-        {
-            'name': 'Pasta Pomodoro', 
-            'matching_ingredients': ['pasta', 'tomatoes', 'basil'],
-            'match_percentage': 88,
-            'prep_time': 25,
-            'calories': 450,
-            'rating': 4.2
-        }
-    ]
-
+# Add pantry item view
 @login_required(login_url='account_login')
 def add_pantry_item_view(request):
     """
@@ -138,6 +152,49 @@ def add_pantry_item_view(request):
         'ingredients': Ingredient.objects.all().order_by('name')
     }
     return render(request, 'core/add_pantry_item.html', context)
+
+# Edit pantry item view
+@login_required(login_url='account_login')
+def edit_pantry_item_view(request, item_id):
+    """
+    Edit existing pantry item
+    """
+    pantry_item = get_object_or_404(UserPantry, id=item_id, user=request.user)
+    
+    if request.method == 'POST':
+        form = PantryItemForm(request.POST, request.FILES, instance=pantry_item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'{pantry_item.ingredient.name} updated successfully!')
+            return redirect('core:pantry_list')
+    else:
+        form = PantryItemForm(instance=pantry_item)
+    
+    context = {
+        'form': form,
+        'pantry_item': pantry_item
+    }
+    return render(request, 'core/edit_pantry_item.html', context)
+
+# Delete pantry item view
+@login_required(login_url='account_login')
+def delete_pantry_item_view(request, item_id):
+    """
+    Delete pantry item
+    """
+    pantry_item = get_object_or_404(UserPantry, id=item_id, user=request.user)
+    
+    if request.method == 'POST':
+        pantry_item.delete()
+        messages.success(request, f'{pantry_item.ingredient.name} deleted successfully!')
+        return redirect('pantry_list')
+    
+    context = {
+        'pantry_item': pantry_item
+    }
+    return render(request, 'core/delete_pantry_item.html', context)
+
+
 
 @login_required(login_url='account_login')
 def add_manual_ingredient_view(request):
@@ -179,93 +236,9 @@ def add_manual_ingredient_view(request):
     context = {'form': form}
     return render(request, 'core/add_manual_ingredient.html', context)
 
-@login_required(login_url='account_login')
-def scan_ingredient_view(request):
-    """
-    Handle image upload for ingredient scanning
-    """
-    if request.method == 'POST':
-        if 'image' in request.FILES:
-            # Create image processing job
-            image_file = request.FILES['image']
-            job = ImageProcessingJob.objects.create(
-                user=request.user,
-                image=image_file,
-                job_type='expiry'
-            )
-            
-            # In a real implementation, this would be handled by Celery
-            # For now, we'll process synchronously
-            try:
-                
-                detector = ExpiryDateDetector()
-                result = detector.detect_expiry_date(image_file.temporary_file_path())
-                
-                job.status = 'completed'
-                job.detected_text = result.get('detected_text', '')
-                job.processed_data = result
-                job.processed_at = timezone.now()
-                job.save()
-                
-                return JsonResponse({
-                    'success': True,
-                    'job_id': job.id,
-                    'result': result
-                })
-                
-            except Exception as e:
-                job.status = 'failed'
-                job.error_message = str(e)
-                job.save()
-                return JsonResponse({'success': False, 'error': str(e)})
-    
-    return render(request, 'core/scan_ingredient.html')
 
-@login_required(login_url='account_login')
-def edit_pantry_item(request, item_id):
-    """
-    Edit existing pantry item
-    """
-    pantry_item = get_object_or_404(UserPantry, id=item_id, user=request.user)
-    
-    if request.method == 'POST':
-        form = PantryItemForm(request.POST, request.FILES, instance=pantry_item)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f'{pantry_item.ingredient.name} updated successfully!')
-            return redirect('core:pantry_dashboard')
-    else:
-        form = PantryItemForm(instance=pantry_item)
-    
-    context = {
-        'form': form,
-        'pantry_item': pantry_item
-    }
-    return render(request, 'core/edit_pantry_item.html', context)
 
-@login_required(login_url='account_login')
-def update_quantity(request, item_id):
-    """
-    AJAX view to update item quantity
-    """
-    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        pantry_item = get_object_or_404(UserPantry, id=item_id, user=request.user)
-        new_quantity = request.POST.get('quantity')
-        
-        try:
-            pantry_item.quantity = float(new_quantity)
-            pantry_item.save()
-            
-            return JsonResponse({
-                'success': True,
-                'new_quantity': pantry_item.quantity,
-                'item_name': pantry_item.ingredient.name
-            })
-        except (ValueError, TypeError):
-            return JsonResponse({'success': False, 'error': 'Invalid quantity'})
-    
-    return JsonResponse({'success': False, 'error': 'Invalid request'})
-
+# Consumption & Waste Views
 @login_required(login_url='account_login')
 def log_consumption_view(request, item_id):
     """
@@ -282,7 +255,6 @@ def log_consumption_view(request, item_id):
             
             # Update pantry item quantity
             if quantity_used >= pantry_item.quantity:
-                # Used all of it
                 pantry_item.quantity = 0
                 pantry_item.status = 'consumed'
             else:
@@ -291,7 +263,7 @@ def log_consumption_view(request, item_id):
             pantry_item.save()
             
             # Create consumption record
-            consumption = ConsumptionRecord.objects.create(
+            ConsumptionRecord.objects.create(
                 user=request.user,
                 pantry_item=pantry_item,
                 recipe=recipe,
@@ -321,7 +293,7 @@ def log_consumption_view(request, item_id):
     return render(request, 'core/log_consumption.html', context)
 
 @login_required(login_url='account_login')
-def record_waste(request, item_id):
+def record_waste_view(request, item_id):
     """
     Record food waste for a pantry item
     """
@@ -335,7 +307,7 @@ def record_waste(request, item_id):
             reason_details = form.cleaned_data.get('reason_details', '')
             
             # Create waste record
-            waste_record = FoodWasteRecord.objects.create(
+            FoodWasteRecord.objects.create(
                 user=request.user,
                 ingredient=pantry_item.ingredient,
                 original_quantity=pantry_item.quantity,
@@ -381,22 +353,47 @@ def record_waste(request, item_id):
     
     return render(request, 'core/record_waste.html', context)
 
+# Scanning & AI Views
 @login_required(login_url='account_login')
-def delete_pantry_item(request, item_id):
+def scan_ingredient_view(request):
     """
-    Remove item from pantry (soft delete)
+    Handle image upload for ingredient scanning
     """
-    pantry_item = get_object_or_404(UserPantry, id=item_id, user=request.user)
-    
     if request.method == 'POST':
-        pantry_item.status = 'consumed'  # or 'wasted' based on context
-        pantry_item.save()
-        messages.success(request, f'{pantry_item.ingredient.name} removed from pantry!')
-        return redirect('core:pantry_dashboard')
+        if 'image' in request.FILES:
+            # Create image processing job
+            image_file = request.FILES['image']
+            job = ImageProcessingJob.objects.create(
+                user=request.user,
+                image=image_file,
+                job_type='expiry'
+            )
+            
+            try:
+                detector = ExpiryDateDetector()
+                result = detector.detect_expiry_date(image_file.temporary_file_path())
+                
+                job.status = 'completed'
+                job.detected_text = result.get('detected_text', '')
+                job.processed_data = result
+                job.processed_at = timezone.now()
+                job.save()
+                
+                return JsonResponse({
+                    'success': True,
+                    'job_id': job.id,
+                    'result': result
+                })
+                
+            except Exception as e:
+                job.status = 'failed'
+                job.error_message = str(e)
+                job.save()
+                return JsonResponse({'success': False, 'error': str(e)})
     
-    context = {'pantry_item': pantry_item}
-    return render(request, 'core/delete_pantry_item.html', context)
+    return render(request, 'core/scan_ingredient.html')
 
+# Analytics & API Views
 @login_required(login_url='account_login')
 def pantry_analytics_view(request):
     """
@@ -452,6 +449,30 @@ def expiring_soon_api(request):
         })
     
     return JsonResponse({'expiring_items': items_data})
+
+# Quick Actions (AJAX)
+@login_required(login_url='account_login')
+def update_quantity(request, item_id):
+    """
+    AJAX view to update item quantity
+    """
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        pantry_item = get_object_or_404(UserPantry, id=item_id, user=request.user)
+        new_quantity = request.POST.get('quantity')
+        
+        try:
+            pantry_item.quantity = float(new_quantity)
+            pantry_item.save()
+            
+            return JsonResponse({
+                'success': True,
+                'new_quantity': pantry_item.quantity,
+                'item_name': pantry_item.ingredient.name
+            })
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Invalid quantity'})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 @login_required(login_url='account_login')
 def quick_consume(request, item_id):

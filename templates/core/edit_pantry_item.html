@@ -1,85 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit {{ pantry_item.ingredient.name }} - PantryChef</title>
-</head>
-<body>
-    <header>
-        <h1>Edit {{ pantry_item.ingredient.name }}</h1>
-        <nav>
-            <a href="{% url 'core:pantry_dashboard' %}">Back to Pantry</a>
-        </nav>
-    </header>
+{% extends 'base.html' %}
 
-    <main>
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            
-            <div>
-                <label>Ingredient:</label>
-                {{ form.ingredient }}
-            </div>
+{% block title %}Edit {{ pantry_item.ingredient.name }}{% endblock %}
 
-            <div>
-                <label>Custom Name:</label>
-                {{ form.custom_name }}
-            </div>
-
-            <div>
-                <label>Quantity:</label>
-                {{ form.quantity }}
-            </div>
-
-            <div>
-                <label>Unit:</label>
-                {{ form.unit }}
-            </div>
-
-            <div>
-                <label>Purchase Date:</label>
-                {{ form.purchase_date }}
-            </div>
-
-            <div>
-                <label>Expiry Date:</label>
-                {{ form.expiry_date }}
-            </div>
-
-            <div>
-                <label>Price:</label>
-                {{ form.price }}
-            </div>
-
-            <div>
-                <label>Product Image:</label>
-                {% if pantry_item.product_image %}
-                    <p>Current: <img src="{{ pantry_item.product_image.url }}" alt="Product" width="50"></p>
-                {% endif %}
-                {{ form.product_image }}
-            </div>
-
-            <div>
-                <label>Expiry Label Image:</label>
-                {% if pantry_item.expiry_label_image %}
-                    <p>Current: <img src="{{ pantry_item.expiry_label_image.url }}" alt="Expiry" width="50"></p>
-                {% endif %}
-                {{ form.expiry_label_image }}
-            </div>
-
-            <div>
-                <label>Notes:</label>
-                {{ form.notes }}
-            </div>
-
-            <button type="submit">Update Item</button>
-        </form>
-
-        <div>
-            <h3>Quick Actions</h3>
-            <a href="{% url 'core:log_consumption' pantry_item.id %}">Log Consumption</a>
-            <a href="{% url 'core:record_waste' pantry_item.id %}">Record Waste</a>
-            <a href="{% url 'core:delete_pantry_item' pantry_item.id %}">Remove from Pantry</a>
-        </div>
-    </main>
-</body>
-</html>
+{% block content %}
+<div class="container">
+    <h1>Edit {{ pantry_item.ingredient.name }}</h1>
+    
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Update Item</button>
+        <a href="{% url 'pantry_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

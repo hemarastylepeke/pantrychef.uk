@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import UserProfile
-from .forms import UserProfileForm, DietaryRequirementsForm, PreferencesForm
+from .forms import UserProfileForm, DietaryRequirementsForm, PreferencesForm, CompleteUserProfileForm
 
 # Create profile view
 @login_required(login_url='account_login')
@@ -16,16 +16,17 @@ def create_profile_view(request):
         return redirect('profile_page')
 
     if request.method == 'POST':
-        form = UserProfileForm(request.POST, request.FILES)
+        form = CompleteUserProfileForm(request.POST, request.FILES)
         if form.is_valid():
             profile = form.save(commit=False)
             profile.user = request.user
             profile.save()
             messages.success(request, 'Your profile was created successfully!')
             return redirect('profile_page')
-        messages.error(request, 'Please correct the errors below.')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
-        form = UserProfileForm()
+        form = CompleteUserProfileForm()
 
     return render(request, 'account/create_profile.html', {'form': form})
 
@@ -89,7 +90,7 @@ def profile_page_view(request):
 @login_required(login_url='account_login')
 def edit_profile_view(request):
     """
-    Edit profile view that handles all three forms in a tabbed interface
+    Edit profile view that handles all profile fields
     """
     try:
         profile = UserProfile.objects.get(user=request.user)
@@ -97,20 +98,11 @@ def edit_profile_view(request):
         messages.warning(request, 'Please create your profile first.')
         return redirect('create_profile')
 
-    # Initialize forms with instance data
-    profile_form = UserProfileForm(instance=profile)
-    dietary_form = DietaryRequirementsForm(instance=profile)
-    preferences_form = PreferencesForm(instance=profile)
-
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
 
         if form_type == 'profile':
-            profile_form = UserProfileForm(
-                request.POST, 
-                request.FILES, 
-                instance=profile
-            )
+            profile_form = UserProfileForm(request.POST, request.FILES, instance=profile)
             if profile_form.is_valid():
                 profile_form.save()
                 messages.success(request, 'Personal information updated successfully!')
@@ -119,34 +111,27 @@ def edit_profile_view(request):
                 messages.error(request, 'Please correct the errors in the personal information form.')
 
         elif form_type == 'dietary':
-            dietary_form = DietaryRequirementsForm(
-                request.POST, 
-                instance=profile
-            )
-            if dietary_form.is_valid():
-                dietary_form.save()
-                messages.success(request, 'Dietary requirements updated successfully!')
-                return redirect('edit_profile')
-            else:
-                messages.error(request, 'Please correct the errors in the dietary requirements form.')
+            # Handle dietary fields directly
+            profile.allergies = request.POST.get('allergies', '')
+            profile.dietary_restrictions = request.POST.get('dietary_restrictions', '')
+            profile.disliked_ingredients = request.POST.get('disliked_ingredients', '')
+            profile.save()
+            messages.success(request, 'Dietary requirements updated successfully!')
+            return redirect('edit_profile')
 
         elif form_type == 'preferences':
-            preferences_form = PreferencesForm(
-                request.POST, 
-                instance=profile
-            )
-            if preferences_form.is_valid():
-                preferences_form.save()
-                messages.success(request, 'Taste preferences updated successfully!')
-                return redirect('edit_profile')
-            else:
-                messages.error(request, 'Please correct the errors in the preferences form.')
+            # Handle preference fields directly
+            profile.preferred_cuisines = request.POST.get('preferred_cuisines', '')
+            profile.save()
+            messages.success(request, 'Preferences updated successfully!')
+            return redirect('edit_profile')
+
+    # Initialize forms
+    profile_form = UserProfileForm(instance=profile)
 
     context = {
         'profile': profile,
         'profile_form': profile_form,
-        'dietary_form': dietary_form,
-        'preferences_form': preferences_form,
     }
     
     return render(request, 'account/edit_profile.html', context)
