@@ -1,0 +1,114 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ title }} - Pantry Pilot{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-8">
+    <div class="container mx-auto px-4 max-w-2xl">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-green-500 to-blue-500 px-8 py-6">
+                <h1 class="text-2xl md:text-3xl font-bold text-white">{{ title }}</h1>
+                <p class="text-green-100 mt-2">Set up your budget parameters</p>
+            </div>
+
+            <!-- Form -->
+            <div class="p-8">
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Amount and Currency -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Amount -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Budget Amount *</label>
+                            {{ form.amount }}
+                            {% if form.amount.errors %}
+                                <div class="text-red-500 text-sm mt-1">{{ form.amount.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Currency -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Currency *</label>
+                            {{ form.currency }}
+                            {% if form.currency.errors %}
+                                <div class="text-red-500 text-sm mt-1">{{ form.currency.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Period and Active Status -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Period -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Budget Period *</label>
+                            {{ form.period }}
+                            {% if form.period.errors %}
+                                <div class="text-red-500 text-sm mt-1">{{ form.period.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Active Status -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                            <div class="mt-2">
+                                <label class="inline-flex items-center">
+                                    {{ form.active }}
+                                    <span class="ml-2 text-gray-700">Set as active budget</span>
+                                </label>
+                            </div>
+                            {% if form.active.errors %}
+                                <div class="text-red-500 text-sm mt-1">{{ form.active.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Dates -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Start Date -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
+                            {{ form.start_date }}
+                            {% if form.start_date.errors %}
+                                <div class="text-red-500 text-sm mt-1">{{ form.start_date.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- End Date -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                            {{ form.end_date }}
+                            <p class="text-xs text-gray-500 mt-1">Leave empty for automatic calculation based on period</p>
+                            {% if form.end_date.errors %}
+                                <div class="text-red-500 text-sm mt-1">{{ form.end_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Help Text -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-blue-800 mb-2">Budget Tips:</h4>
+                        <ul class="text-sm text-blue-700 space-y-1">
+                            <li>• Weekly budgets automatically set end date to 7 days from start</li>
+                            <li>• Monthly budgets automatically set end date to 30 days from start</li>
+                            <li>• Only one budget can be active at a time</li>
+                            <li>• Active budgets are used for spending tracking and alerts</li>
+                        </ul>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+                        <button type="submit" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 px-6 rounded-lg font-semibold transition-colors duration-200 transform hover:scale-105">
+                            {% if budget %}Update Budget{% else %}Create Budget{% endif %}
+                        </button>
+                        <a href="{% url 'budget_list' %}" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold text-center transition-colors duration-200">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

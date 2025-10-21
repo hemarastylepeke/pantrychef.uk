@@ -364,3 +364,14 @@ class Budget(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.amount} {self.currency}/{self.period}"
+
+    def get_spending_percentage(self):
+        if self.amount > 0:
+            return (self.amount_spent / self.amount) * 100
+        return 0
+    
+    def get_remaining_budget(self):
+        return self.amount - self.amount_spent
+    
+    def get_status_display(self):
+        return "Active" if self.active else "Inactive"

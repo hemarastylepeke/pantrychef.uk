@@ -17,4 +17,13 @@ urlpatterns = [
     path('ingredients/<int:ingredient_id>/', views.ingredient_detail_view, name='ingredient_detail'),
     path('ingredients/<int:ingredient_id>/edit/', views.edit_ingredient_view, name='edit_ingredient'),
     path('ingredients/<int:ingredient_id>/delete/', views.delete_ingredient_view, name='delete_ingredient'),
+
+    # Budget management URLs
+    path('budgets/', views.budget_list_view, name='budget_list'),
+    path('budgets/add/', views.create_budget_view, name='create_budget'),
+    path('budgets/<int:budget_id>/', views.budget_detail_view, name='budget_detail'),
+    path('budgets/<int:budget_id>/edit/', views.edit_budget_view, name='edit_budget'),
+    path('budgets/<int:budget_id>/delete/', views.delete_budget_view, name='delete_budget'),
+    path('budgets/<int:budget_id>/toggle-active/', views.toggle_budget_active_view, name='toggle_budget_active'),
+    path('budgets/analytics/', views.budget_analytics_view, name='budget_analytics'),
 ]
