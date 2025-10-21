@@ -5,8 +5,8 @@ from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
 import json
-from .models import UserPantry, Ingredient, ConsumptionRecord, FoodWasteRecord, ImageProcessingJob, Recipe, Budget
-from .forms import PantryItemForm, ManualIngredientForm, ConsumptionForm, WasteRecordForm, IngredientForm
+from .models import UserPantry, Ingredient, Recipe, Budget
+from .forms import PantryItemForm, IngredientForm
 from .services.vision_service import ExpiryDateDetector
 
 # Helper functions
