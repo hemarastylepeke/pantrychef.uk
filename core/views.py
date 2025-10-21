@@ -5,7 +5,8 @@ from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
 import json
-from .models import UserPantry, Ingredient, Recipe, Budget
+from .models import UserPantry, Ingredient, Recipe, Budget, ShoppingList
+from django.db.models import Sum
 from .forms import PantryItemForm, IngredientForm, BudgetForm
 from .services.vision_service import ExpiryDateDetector
 
@@ -370,7 +371,7 @@ def create_budget_view(request):
             
             budget.save()
             messages.success(request, f'Budget created successfully!')
-            return redirect('core:budget_list')
+            return redirect('budget_list')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -493,3 +494,66 @@ def budget_analytics_view(request):
         'total_spent': sum(budget.amount_spent for budget in budgets),
     }
     return render(request, 'core/budget_analytics.html', context)
+
+#-----------------------------------------------------SHOPPING LIST VIEWS-------------------------------------------------------------------------#
+# Shopping List List View
+@login_required(login_url='account_login')
+def shopping_list_list_view(request):
+    """
+    List all shopping lists for the user
+    """
+    shopping_lists = ShoppingList.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Calculate statistics
+    total_lists = shopping_lists.count()
+    completed_lists = shopping_lists.filter(status='completed').count()
+    total_estimated_cost = shopping_lists.aggregate(total=Sum('total_estimated_cost'))['total'] or 0
+    total_actual_cost = shopping_lists.aggregate(total=Sum('total_actual_cost'))['total'] or 0
+    
+    # Get recent lists (last 5)
+    recent_lists = shopping_lists[:5]
+    
+    context = {
+        'shopping_lists': shopping_lists,
+        'recent_lists': recent_lists,
+        'total_lists': total_lists,
+        'completed_lists': completed_lists,
+        'total_estimated_cost': total_estimated_cost,
+        'total_actual_cost': total_actual_cost,
+    }
+    return render(request, 'core/shopping_list_list.html', context)
+
+# Shopping List Detail View
+@login_required(login_url='account_login')
+def shopping_list_detail_view(request, list_id):
+    """
+    View shopping list details with all items
+    """
+    shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
+    
+    # Get items grouped by priority
+    high_priority_items = shopping_list.items.filter(priority='high').order_by('ingredient__name')
+    medium_priority_items = shopping_list.items.filter(priority='medium').order_by('ingredient__name')
+    low_priority_items = shopping_list.items.filter(priority='low').order_by('ingredient__name')
+    
+    # Calculate item statistics
+    total_items = shopping_list.items.count()
+    purchased_items = shopping_list.items.filter(purchased=True).count()
+    purchased_percentage = (purchased_items / total_items * 100) if total_items > 0 else 0
+    
+    # Cost analysis
+    total_estimated = shopping_list.items.aggregate(total=Sum('estimated_price'))['total'] or 0
+    total_actual = shopping_list.items.aggregate(total=Sum('actual_price'))['total'] or 0
+    
+    context = {
+        'shopping_list': shopping_list,
+        'high_priority_items': high_priority_items,
+        'medium_priority_items': medium_priority_items,
+        'low_priority_items': low_priority_items,
+        'total_items': total_items,
+        'purchased_items': purchased_items,
+        'purchased_percentage': purchased_percentage,
+        'total_estimated': total_estimated,
+        'total_actual': total_actual,
+    }
+    return render(request, 'core/shopping_list_detail.html', context)

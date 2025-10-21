@@ -26,4 +26,8 @@ urlpatterns = [
     path('budgets/<int:budget_id>/delete/', views.delete_budget_view, name='delete_budget'),
     path('budgets/<int:budget_id>/toggle-active/', views.toggle_budget_active_view, name='toggle_budget_active'),
     path('budgets/analytics/', views.budget_analytics_view, name='budget_analytics'),
+
+    # Shopping list URLs
+    path('shopping-lists/', views.shopping_list_list_view, name='shopping_list_list'),
+    path('shopping-lists/<int:list_id>/', views.shopping_list_detail_view, name='shopping_list_detail'),
 ]
