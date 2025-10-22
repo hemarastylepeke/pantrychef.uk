@@ -1,0 +1,18 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5 text-center">
+  <h2 class="mb-3">Generate an AI-Powered Recipe</h2>
+  <p class="text-muted mb-4">
+    The AI will create a recipe based on your pantry ingredients, dietary preferences, and goals.
+  </p>
+  
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-primary px-4 py-2" type="submit">
+      Generate Recipe
+    </button>
+  </form>
+</div>
+{% endblock %}

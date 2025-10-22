@@ -11,6 +11,7 @@ from .forms import PantryItemForm, IngredientForm, BudgetForm, ShoppingListForm,
 from django.db.models import Q
 from .services.vision_service import ExpiryDateDetector
 from django.forms import formset_factory
+from core.services.recipe_suggestion_ai import generate_ai_recipe_from_openai
 
 # Helper functions
 def calculate_waste_savings(user):
@@ -814,31 +815,28 @@ def recipe_detail_view(request, recipe_id):
 @login_required(login_url='account_login')
 def create_recipe_view(request):
     """
-    Create a new recipe
+    Generate a new recipe using AI based on:
+    - User profile (goal, allergies, budget)
+    - Available pantry ingredients
+    - Expiring items to reduce food waste
+
+    Replaces manual recipe creation.
     """
     if request.method == 'POST':
-        form = RecipeForm(request.POST, request.FILES)
-        if form.is_valid():
-            recipe = form.save(commit=False)
-            recipe.created_by = request.user
-            
-            # Handle image upload
-            if 'image' in request.FILES:
-                recipe.image = request.FILES['image']
-            
-            recipe.save()
-            messages.success(request, f'Recipe "{recipe.name}" created successfully!')
+        try:
+            # Call the AI service to generate and save a recipe
+            recipe = generate_ai_recipe_from_openai(request.user)
+            messages.success(request, f'AI Recipe "{recipe.name}" generated successfully!')
             return redirect('recipe_detail', recipe_id=recipe.id)
-        else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = RecipeForm()
+        except Exception as e:
+            messages.error(request, f"Error generating AI recipe: {str(e)}")
+            return redirect('create_recipe')
     
     context = {
-        'form': form,
-        'title': 'Create New Recipe'
+        'title': 'Generate AI Recipe',
     }
-    return render(request, 'core/recipe_form.html', context)
+    return render(request, 'core/ai_generate_recipe.html', context)
+
 
 # Edit Recipe View
 @login_required(login_url='account_login')
@@ -915,44 +913,6 @@ def my_recipes_view(request):
     }
     return render(request, 'core/my_recipes.html', context)
 
-# app/views/ai_views.py
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-from core.services.recipe_suggestion_ai import generate_ai_recipe_from_openai
-from app.serializers import RecipeSerializer
-
-
-# AI recipe generation view 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def generate_ai_recipe(request):
-    """
-    Generate an AI-powered recipe for the authenticated user.
-
-    The AI uses:
-    - User dietary preferences & allergies
-    - Available ingredients from UserPantry
-    - Budget & nutrition goals (gain/lose weight, more fiber, etc.)
-
-    Returns a new recipe created and saved in the database.
-    """
-    try:
-        recipe = generate_ai_recipe_from_openai(request.user)
-        serializer = RecipeSerializer(recipe)
-        return Response(
-            {
-                "message": "AI Recipe generated successfully",
-                "recipe": serializer.data,
-            },
-            status=status.HTTP_201_CREATED
-        )
-    except Exception as e:
-        return Response(
-            {"error": str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
 
     # pending implementation of AI-generated weekly shopping list
 # @login_required
