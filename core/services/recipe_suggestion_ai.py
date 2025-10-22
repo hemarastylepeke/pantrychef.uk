@@ -56,35 +56,43 @@ def generate_ai_recipe_from_openai(user):
     """
     context = build_ai_recipe_context(user)
 
-    prompt = f"""
-    You are a smart kitchen assistant helping users reduce food waste.
+    # Build dynamic ingredient list from pantry
+    pantry_ingredients = [
+        f"{item['quantity']} {item['unit']} of {item['ingredient']}"
+        for item in context["pantry"]
+    ]
+    ingredient_text = ", ".join(pantry_ingredients) if pantry_ingredients else "none available"
 
-    Create ONE complete recipe in JSON format using ONLY these ingredients:
-    {json.dumps(context['pantry'], indent=2)}
+    prompt = f"""
+    You are a professional chef and nutritionist helping users reduce food waste.
+
+    The user currently has the following ingredients in their pantry:
+    {ingredient_text}
 
     Avoid allergens: {context['user']['allergies']}
     The user’s goal is: {context['user']['goal']}
     Preferred cuisines: {context['user']['preferred_cuisines']}
 
-    Respond STRICTLY in this JSON structure:
+    Using ONLY the available pantry ingredients, create ONE healthy, complete recipe suggestion.
+
+    Respond STRICTLY in this JSON structure (without extra commentary):
     {{
         "name": "Recipe Name",
         "description": "A short appetizing summary",
-        "cuisine": "One of: kenyan, italian, mexican, asian, indian, mediterranean, american, french, thai, chinese, japanese, other",
+        "cuisine": "kenyan | italian | mexican | asian | indian | mediterranean | american | french | thai | chinese | japanese | other",
         "difficulty": "easy | medium | hard",
-        "prep_time": 15,
-        "cook_time": 25,
-        "servings": 2,
+        "prep_time": number (in minutes),
+        "cook_time": number (in minutes),
+        "servings": number,
         "ingredients": [
-            {{"name": "Tomato", "quantity": 2, "unit": "pieces"}},
-            {{"name": "Milk", "quantity": 200, "unit": "ml"}}
+            {{"name": "IngredientName", "quantity": number, "unit": "g/ml/pieces"}}
         ],
-        "instructions": "Step-by-step cooking guide.",
-        "total_calories": 520,
-        "total_protein": 25,
-        "total_carbs": 50,
-        "total_fat": 20,
-        "dietary_tags": "vegetarian, gluten-free"
+        "instructions": "Detailed step-by-step cooking guide.",
+        "total_calories": number,
+        "total_protein": number,
+        "total_carbs": number,
+        "total_fat": number,
+        "dietary_tags": "comma-separated dietary tags"
     }}
     """
 
@@ -96,16 +104,16 @@ def generate_ai_recipe_from_openai(user):
                 {"role": "system", "content": "You are a professional nutritionist and chef."},
                 {"role": "user", "content": prompt},
             ],
-            temperature=0.6,
+            temperature=0.65,
         )
 
         ai_content = response.choices[0].message.content.strip()
 
-        # Extract JSON safely even if text contains extras
+        # Extract JSON safely even if text contains extra text
         match = re.search(r'\{.*\}', ai_content, re.DOTALL)
         recipe_json = json.loads(match.group()) if match else {}
 
-        # Create Recipe instance with full data
+        # --- Create Recipe instance ---
         recipe = Recipe.objects.create(
             name=recipe_json.get("name", f"AI Recipe for {user.email}"),
             description=recipe_json.get("description", "No description available."),
@@ -124,11 +132,20 @@ def generate_ai_recipe_from_openai(user):
             is_ai_generated=True,
         )
 
-        # Match and add ingredients correctly
-        ingredient_names = [i["name"].lower() for i in recipe_json.get("ingredients", [])]
-        matched_ingredients = Ingredient.objects.filter(name__in=ingredient_names)
+        # --- Handle ingredient relations properly ---
+        ingredient_data = recipe_json.get("ingredients", [])
+        ingredient_names = [i["name"].strip().lower() for i in ingredient_data]
 
-        recipe.ingredients.set(matched_ingredients)
+        existing_ingredients = Ingredient.objects.filter(name__in=ingredient_names)
+        existing_names = set(i.name.lower() for i in existing_ingredients)
+
+        # Create new ingredients that don’t exist yet
+        new_ingredients = [
+            Ingredient.objects.create(name=i["name"])
+            for i in ingredient_data if i["name"].lower() not in existing_names
+        ]
+
+        recipe.ingredients.set(list(existing_ingredients) + new_ingredients)
 
         return recipe
 
