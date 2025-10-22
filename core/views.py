@@ -828,7 +828,7 @@ def create_recipe_view(request):
             
             recipe.save()
             messages.success(request, f'Recipe "{recipe.name}" created successfully!')
-            return redirect('core:recipe_detail', recipe_id=recipe.id)
+            return redirect('recipe_detail', recipe_id=recipe.id)
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -888,7 +888,7 @@ def delete_recipe_view(request, recipe_id):
     # Check if user owns the recipe or is superuser
     if recipe.created_by != request.user and not request.user.is_superuser:
         messages.error(request, 'You do not have permission to delete this recipe.')
-        return redirect('core:recipe_detail', recipe_id=recipe.id)
+        return redirect('recipe_list')
     
     if request.method == 'POST':
         recipe_name = recipe.name

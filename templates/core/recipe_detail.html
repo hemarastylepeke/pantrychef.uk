@@ -34,7 +34,7 @@
             </div>
             <div class="flex gap-2 mt-4 md:mt-0">
                 {% if recipe.created_by == request.user or request.user.is_superuser %}
-                <a href="{% url 'core:edit_recipe' recipe.id %}" 
+                <a href="{% url 'edit_recipe' recipe.id %}" 
                    class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 font-medium">
                     Edit
                 </a>
