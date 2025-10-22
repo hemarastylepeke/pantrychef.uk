@@ -3,6 +3,7 @@ from django.conf import settings
 
 User = settings.AUTH_USER_MODEL
 
+# Records the types of foods details such as nuitritional info and general information about the food item
 class Ingredient(models.Model):
     CATEGORY_CHOICES = [
         ('vegetables', 'Vegetables'),
@@ -26,7 +27,6 @@ class Ingredient(models.Model):
     barcode = models.CharField(max_length=100, blank=True, null=True, unique=True)
     typical_expiry_days = models.IntegerField(null=True, blank=True)
     storage_instructions = models.TextField(blank=True)
-    
     calories = models.FloatField(help_text="Calories per 100g")
     protein = models.FloatField(help_text="Protein in grams per 100g")
     carbs = models.FloatField(help_text="Carbohydrates in grams per 100g")
@@ -52,7 +52,7 @@ class Ingredient(models.Model):
     def get_nutritional_info(self):
         return f"Calories: {self.calories}, Protein: {self.protein}g, Carbs: {self.carbs}g, Fat: {self.fat}g"
 
-
+# Records to a particular user's  items that they own i.e Tomatoe sauce
 class UserPantry(models.Model):
     STATUS_CHOICES = [
         ('active', 'Active'),
@@ -134,14 +134,16 @@ class Recipe(models.Model):
     cuisine = models.CharField(max_length=50, choices=CUISINE_CHOICES)
     servings = models.IntegerField()
 
-    ingredients = models.TextField()
+    # Link recipes to ingredients using a ManyToMany through RecipeIngredient
+    ingredients = models.ManyToManyField('Ingredient', through='RecipeIngredient', related_name='recipes')
+
     instructions = models.TextField()
-    
+
     total_calories = models.FloatField(null=True, blank=True)
     total_protein = models.FloatField(null=True, blank=True)
     total_carbs = models.FloatField(null=True, blank=True)
     total_fat = models.FloatField(null=True, blank=True)
-    
+
     dietary_tags = models.CharField(max_length=200, blank=True)
 
     image = models.ImageField(upload_to='recipe_images/', blank=True, null=True)
@@ -164,6 +166,54 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.name
+
+    # Calculate nuitrional data to match user goals
+    def calculate_nutrition(self):
+        """
+        Dynamically calculates total nutrition from linked ingredients.
+        """
+        recipe_ingredients = self.recipeingredient_set.all()
+        total_calories = total_protein = total_carbs = total_fat = 0
+        for ri in recipe_ingredients:
+            contrib = ri.get_nutritional_contribution()
+            total_calories += contrib['calories']
+            total_protein += contrib['protein']
+            total_carbs += contrib['carbs']
+            total_fat += contrib['fat']
+        self.total_calories = total_calories
+        self.total_protein = total_protein
+        self.total_carbs = total_carbs
+        self.total_fat = total_fat
+        self.save()
+
+
+class RecipeIngredient(models.Model):
+    """
+    A bridge table linking recipes and ingredients. It stores the quantity, unit, and nutritional contribution of each ingredient used in a recipe.
+    This relationship allows accurate nutrition calculation, cost tracking, and AI-driven recipe generation based on available ingredients,
+    dietary preferences, and user budgets.
+    """
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    quantity = models.FloatField()
+    unit = models.CharField(max_length=50, default="g")
+    
+    optional = models.BooleanField(default=False, help_text="Whether ingredient is optional")
+
+    def __str__(self):
+        return f"{self.ingredient.name} ({self.quantity}{self.unit}) for {self.recipe.name}"
+
+    def get_nutritional_contribution(self):
+        """
+        Returns nutritional info scaled to the quantity used.
+        """
+        scale = self.quantity / 100
+        return {
+            'calories': self.ingredient.calories * scale,
+            'protein': self.ingredient.protein * scale,
+            'carbs': self.ingredient.carbs * scale,
+            'fat': self.ingredient.fat * scale,
+        }
 
 
 class ShoppingList(models.Model):

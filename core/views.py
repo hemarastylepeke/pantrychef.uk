@@ -851,7 +851,7 @@ def edit_recipe_view(request, recipe_id):
     # Check if user owns the recipe or is superuser
     if recipe.created_by != request.user and not request.user.is_superuser:
         messages.error(request, 'You do not have permission to edit this recipe.')
-        return redirect('core:recipe_detail', recipe_id=recipe.id)
+        return redirect('recipe_detail', recipe_id=recipe.id)
     
     if request.method == 'POST':
         form = RecipeForm(request.POST, request.FILES, instance=recipe)
@@ -864,7 +864,7 @@ def edit_recipe_view(request, recipe_id):
             
             updated_recipe.save()
             messages.success(request, f'Recipe "{updated_recipe.name}" updated successfully!')
-            return redirect('core:recipe_detail', recipe_id=updated_recipe.id)
+            return redirect('recipe_detail', recipe_id=updated_recipe.id)
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -914,3 +914,53 @@ def my_recipes_view(request):
         'total_recipes': recipes.count(),
     }
     return render(request, 'core/my_recipes.html', context)
+
+    # pending implementation of AI-generated weekly shopping list
+# @login_required
+# def generate_weekly_shopping_list(request):
+#     """
+#     AI generates shopping list based on:
+#     - User's budget
+#     - Health goals (from UserGoal)
+#     - Dietary restrictions (from UserProfile)
+#     - Current pantry items
+#     - Past shopping patterns
+#     """
+#     if request.method == 'POST':
+#         # Get user data
+#         budget = Budget.objects.filter(user=request.user, active=True).first()
+#         goals = UserGoal.objects.filter(user=request.user, active=True)
+#         pantry_items = UserPantry.objects.filter(user=request.user, status='active')
+        
+#         # AI logic to generate shopping list
+#         suggested_items = ai_shopping_suggestions(
+#             budget=budget,
+#             goals=goals,
+#             pantry=pantry_items,
+#             dietary_restrictions=request.user.profile.dietary_restrictions
+#         )
+        
+#         # Create shopping list
+#         shopping_list = ShoppingList.objects.create(
+#             user=request.user,
+#             name=f"Weekly Shopping List - {timezone.now().strftime('%Y-%m-%d')}",
+#             budget_limit=budget.amount if budget else 100,
+#             status='generated',
+#             week_number=timezone.now().isocalendar()[1],
+#             year=timezone.now().year,
+#             month=timezone.now().month
+#         )
+        
+#         # Add suggested items
+#         for item in suggested_items:
+#             ShoppingListItem.objects.create(
+#                 shopping_list=shopping_list,
+#                 ingredient=item['ingredient'],
+#                 quantity=item['quantity'],
+#                 unit=item['unit'],
+#                 estimated_price=item['estimated_price'],
+#                 priority=item['priority'],
+#                 reason=item['reason']  # AI explanation
+#             )
+        
+#         return redirect('core:shopping_list_detail', list_id=shopping_list.id)
