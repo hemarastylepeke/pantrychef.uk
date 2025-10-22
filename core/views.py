@@ -915,6 +915,45 @@ def my_recipes_view(request):
     }
     return render(request, 'core/my_recipes.html', context)
 
+# app/views/ai_views.py
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from core.services.recipe_suggestion_ai import generate_ai_recipe_from_openai
+from app.serializers import RecipeSerializer
+
+
+# AI recipe generation view 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generate_ai_recipe(request):
+    """
+    Generate an AI-powered recipe for the authenticated user.
+
+    The AI uses:
+    - User dietary preferences & allergies
+    - Available ingredients from UserPantry
+    - Budget & nutrition goals (gain/lose weight, more fiber, etc.)
+
+    Returns a new recipe created and saved in the database.
+    """
+    try:
+        recipe = generate_ai_recipe_from_openai(request.user)
+        serializer = RecipeSerializer(recipe)
+        return Response(
+            {
+                "message": "AI Recipe generated successfully",
+                "recipe": serializer.data,
+            },
+            status=status.HTTP_201_CREATED
+        )
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
     # pending implementation of AI-generated weekly shopping list
 # @login_required
 # def generate_weekly_shopping_list(request):
