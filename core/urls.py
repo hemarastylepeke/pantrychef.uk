@@ -28,6 +28,10 @@ urlpatterns = [
     path('budgets/analytics/', views.budget_analytics_view, name='budget_analytics'),
 
     # Shopping list URLs
-    path('shopping-lists/', views.shopping_list_list_view, name='shopping_list_list'),
-    path('shopping-lists/<int:list_id>/', views.shopping_list_detail_view, name='shopping_list_detail'),
+    path('shopping_lists/', views.shopping_list_list_view, name='shopping_list_list'),
+    path('shopping_lists/<int:list_id>/', views.shopping_list_detail_view, name='shopping_list_detail'),
+    path('shopping-lists/add/', views.create_shopping_list_view, name='create_shopping_list'),
+    path('shopping-lists/<int:list_id>/edit/', views.edit_shopping_list_view, name='edit_shopping_list'),
+    path('shopping-lists/<int:list_id>/delete/', views.delete_shopping_list_view, name='delete_shopping_list'),
+    path('shopping-lists/<int:list_id>/add-item/', views.add_shopping_list_item_view, name='add_shopping_list_item'),
 ]

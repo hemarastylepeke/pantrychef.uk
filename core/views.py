@@ -7,8 +7,9 @@ from datetime import timedelta
 import json
 from .models import UserPantry, Ingredient, Recipe, Budget, ShoppingList
 from django.db.models import Sum
-from .forms import PantryItemForm, IngredientForm, BudgetForm
+from .forms import PantryItemForm, IngredientForm, BudgetForm, ShoppingListForm, ShoppingListItemForm
 from .services.vision_service import ExpiryDateDetector
+from django.forms import formset_factory
 
 # Helper functions
 def calculate_waste_savings(user):
@@ -406,7 +407,7 @@ def edit_budget_view(request, budget_id):
             
             updated_budget.save()
             messages.success(request, f'Budget updated successfully!')
-            return redirect('core:budget_detail', budget_id=budget.id)
+            return redirect('budget_detail', budget_id=budget.id)
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -522,6 +523,177 @@ def shopping_list_list_view(request):
         'total_actual_cost': total_actual_cost,
     }
     return render(request, 'core/shopping_list_list.html', context)
+
+# Create Shopping List View
+@login_required(login_url='account_login')
+def create_shopping_list_view(request):
+    """
+    Create a new shopping list with items
+    """
+    ShoppingListItemFormSet = formset_factory(ShoppingListItemForm, extra=3, can_delete=True)
+    
+    if request.method == 'POST':
+        form = ShoppingListForm(request.POST)
+        formset = ShoppingListItemFormSet(request.POST, prefix='items')
+        
+        if form.is_valid() and formset.is_valid():
+            # Save shopping list
+            shopping_list = form.save(commit=False)
+            shopping_list.user = request.user
+            shopping_list.total_estimated_cost = 0
+            shopping_list.save()
+            
+            # Save shopping list items
+            total_estimated_cost = 0
+            for item_form in formset:
+                if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE', False):
+                    item = item_form.save(commit=False)
+                    item.shopping_list = shopping_list
+                    if item.estimated_price:
+                        total_estimated_cost += item.estimated_price
+                    item.save()
+            
+            # Update total estimated cost
+            shopping_list.total_estimated_cost = total_estimated_cost
+            shopping_list.save()
+            
+            messages.success(request, f'Shopping list "{shopping_list.name}" created successfully!')
+            return redirect('shopping_list_detail', list_id=shopping_list.id)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = ShoppingListForm()
+        formset = ShoppingListItemFormSet(prefix='items')
+    
+    context = {
+        'form': form,
+        'formset': formset,
+        'title': 'Create New Shopping List'
+    }
+    return render(request, 'core/shopping_list_form.html', context)
+
+# Edit Shopping List View
+@login_required(login_url='account_login')
+def edit_shopping_list_view(request, list_id):
+    """
+    Edit existing shopping list and its items
+    """
+    shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
+    ShoppingListItemFormSet = formset_factory(ShoppingListItemForm, extra=1, can_delete=True)
+    
+    if request.method == 'POST':
+        form = ShoppingListForm(request.POST, instance=shopping_list)
+        formset = ShoppingListItemFormSet(request.POST, prefix='items')
+        
+        if form.is_valid() and formset.is_valid():
+            # Update shopping list
+            updated_list = form.save(commit=False)
+            
+            # Calculate new total estimated cost
+            total_estimated_cost = 0
+            items_to_save = []
+            
+            for item_form in formset:
+                if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE', False):
+                    item = item_form.save(commit=False)
+                    if hasattr(item, 'shopping_list'):
+                        item.shopping_list = updated_list
+                    else:
+                        item.shopping_list_id = updated_list.id
+                    if item.estimated_price:
+                        total_estimated_cost += item.estimated_price
+                    items_to_save.append(item)
+            
+            # Save everything
+            updated_list.total_estimated_cost = total_estimated_cost
+            updated_list.save()
+            
+            # Delete existing items and save new ones
+            shopping_list.items.all().delete()
+            for item in items_to_save:
+                item.save()
+            
+            messages.success(request, f'Shopping list "{updated_list.name}" updated successfully!')
+            return redirect('core:shopping_list_detail', list_id=updated_list.id)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = ShoppingListForm(instance=shopping_list)
+        
+        # Initialize formset with existing items
+        initial_data = []
+        for item in shopping_list.items.all():
+            initial_data.append({
+                'ingredient': item.ingredient,
+                'quantity': item.quantity,
+                'unit': item.unit,
+                'estimated_price': item.estimated_price,
+                'priority': item.priority,
+                'notes': item.notes,
+                'reason': item.reason,
+            })
+        
+        formset = ShoppingListItemFormSet(initial=initial_data, prefix='items')
+    
+    context = {
+        'form': form,
+        'formset': formset,
+        'shopping_list': shopping_list,
+        'title': f'Edit {shopping_list.name}'
+    }
+    return render(request, 'core/shopping_list_form.html', context)
+
+# Add Item to Shopping List View
+@login_required(login_url='account_login')
+def add_shopping_list_item_view(request, list_id):
+    """
+    Add a single item to existing shopping list
+    """
+    shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
+    
+    if request.method == 'POST':
+        form = ShoppingListItemForm(request.POST)
+        if form.is_valid():
+            item = form.save(commit=False)
+            item.shopping_list = shopping_list
+            item.save()
+            
+            # Update total estimated cost
+            shopping_list.total_estimated_cost = shopping_list.items.aggregate(
+                total=Sum('estimated_price')
+            )['total'] or 0
+            shopping_list.save()
+            
+            messages.success(request, f'Item "{item.ingredient.name}" added to shopping list!')
+            return redirect('shopping_list_detail', list_id=shopping_list.id)
+    else:
+        form = ShoppingListItemForm()
+    
+    context = {
+        'form': form,
+        'shopping_list': shopping_list,
+        'title': 'Add Item to Shopping List'
+    }
+    return render(request, 'core/shopping_list_item_form.html', context)
+
+# Delete Shopping List View
+@login_required(login_url='account_login')
+def delete_shopping_list_view(request, list_id):
+    """
+    Delete shopping list
+    """
+    shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
+    
+    if request.method == 'POST':
+        list_name = shopping_list.name
+        shopping_list.delete()
+        messages.success(request, f'Shopping list "{list_name}" deleted successfully!')
+        return redirect('core:shopping_list_list')
+    
+    context = {
+        'shopping_list': shopping_list
+    }
+    return render(request, 'core/delete_shopping_list.html', context)
 
 # Shopping List Detail View
 @login_required(login_url='account_login')
