@@ -1,0 +1,218 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ recipe.name }} - Pantry Pilot{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-8">
+    <div class="container mx-auto px-4 max-w-6xl">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <div class="flex-1">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">{{ recipe.name }}</h1>
+                <p class="text-lg text-gray-600 mb-4">{{ recipe.description }}</p>
+                <div class="flex flex-wrap gap-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                        {% if recipe.difficulty == 'easy' %}bg-green-100 text-green-800
+                        {% elif recipe.difficulty == 'medium' %}bg-yellow-100 text-yellow-800
+                        {% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ recipe.get_difficulty_display }}
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                        {{ recipe.get_cuisine_display }}
+                    </span>
+                    {% if recipe.is_ai_generated %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                        AI Generated
+                    </span>
+                    {% endif %}
+                    {% if recipe.dietary_tags %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                        {{ recipe.dietary_tags }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex gap-2 mt-4 md:mt-0">
+                {% if recipe.created_by == request.user or request.user.is_superuser %}
+                <a href="{% url 'core:edit_recipe' recipe.id %}" 
+                   class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 font-medium">
+                    Edit
+                </a>
+                <a href="{% url 'delete_recipe' recipe.id %}" 
+                   class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 font-medium">
+                    Delete
+                </a>
+                {% endif %}
+                <a href="{% url 'recipe_list' %}" 
+                   class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 font-medium">
+                    Back to Recipes
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Recipe Content -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Recipe Image -->
+                {% if recipe.image %}
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <img src="{{ recipe.image.url }}" alt="{{ recipe.name }}" class="w-full h-96 object-cover">
+                </div>
+                {% endif %}
+
+                <!-- Quick Info -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                        <div class="text-2xl font-bold text-green-600">{{ recipe.prep_time }}</div>
+                        <div class="text-sm text-gray-600">Prep Time</div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                        <div class="text-2xl font-bold text-orange-600">{{ recipe.cook_time }}</div>
+                        <div class="text-sm text-gray-600">Cook Time</div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                        <div class="text-2xl font-bold text-blue-600">{{ total_time }}</div>
+                        <div class="text-sm text-gray-600">Total Time</div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                        <div class="text-2xl font-bold text-purple-600">{{ recipe.servings }}</div>
+                        <div class="text-sm text-gray-600">Servings</div>
+                    </div>
+                </div>
+
+                <!-- Ingredients -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Ingredients</h2>
+                    <div class="space-y-3">
+                        {% for ingredient in ingredients_list %}
+                        <div class="flex items-start space-x-3">
+                            <div class="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <span class="text-gray-700">{{ ingredient }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Instructions</h2>
+                    <div class="space-y-6">
+                        {% for instruction in instructions_list %}
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                                {{ forloop.counter }}
+                            </div>
+                            <p class="text-gray-700 leading-relaxed">{{ instruction }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Sidebar -->
+            <div class="space-y-6">
+                <!-- Nutritional Information -->
+                {% if recipe.total_calories %}
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Nutritional Information</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Calories:</span>
+                            <span class="font-medium">{{ recipe.total_calories|floatformat:0 }} cal</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Protein:</span>
+                            <span class="font-medium">{{ recipe.total_protein|floatformat:1 }}g</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Carbohydrates:</span>
+                            <span class="font-medium">{{ recipe.total_carbs|floatformat:1 }}g</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Fat:</span>
+                            <span class="font-medium">{{ recipe.total_fat|floatformat:1 }}g</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Recipe Info -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Recipe Information</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Created by:</span>
+                            <span class="font-medium">{{ recipe.created_by.username|default:"System" }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Created:</span>
+                            <span class="font-medium">{{ recipe.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Updated:</span>
+                            <span class="font-medium">{{ recipe.updated_at|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Difficulty:</span>
+                            <span class="font-medium">{{ recipe.get_difficulty_display }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Cuisine:</span>
+                            <span class="font-medium">{{ recipe.get_cuisine_display }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button class="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium">
+                            Add to Meal Plan
+                        </button>
+                        <button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium">
+                            Generate Shopping List
+                        </button>
+                        {% if recipe.created_by == request.user or request.user.is_superuser %}
+                        <a href="{% url 'edit_recipe' recipe.id %}" 
+                           class="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-4 rounded-lg text-center block transition-colors duration-200 font-medium">
+                            Edit Recipe
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'recipe_list' %}" 
+                           class="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg text-center block transition-colors duration-200 font-medium">
+                            Back to Recipes
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Similar Recipes -->
+                {% if similar_recipes %}
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Similar Recipes</h3>
+                    <div class="space-y-3">
+                        {% for similar in similar_recipes %}
+                        <a href="{% url 'recipe_detail' similar.id %}" class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                            {% if similar.image %}
+                            <img src="{{ similar.image.url }}" alt="{{ similar.name }}" class="w-12 h-12 object-cover rounded-lg">
+                            {% else %}
+                            <div class="w-12 h-12 bg-gradient-to-br from-green-100 to-blue-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path>
+                                </svg>
+                            </div>
+                            {% endif %}
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-medium text-gray-800 truncate">{{ similar.name }}</h4>
+                                <p class="text-sm text-gray-600">{{ similar.get_difficulty_display }}</p>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

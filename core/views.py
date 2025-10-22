@@ -7,7 +7,8 @@ from datetime import timedelta
 import json
 from .models import UserPantry, Ingredient, Recipe, Budget, ShoppingList
 from django.db.models import Sum
-from .forms import PantryItemForm, IngredientForm, BudgetForm, ShoppingListForm, ShoppingListItemForm
+from .forms import PantryItemForm, IngredientForm, BudgetForm, ShoppingListForm, ShoppingListItemForm, RecipeForm
+from django.db.models import Q
 from .services.vision_service import ExpiryDateDetector
 from django.forms import formset_factory
 
@@ -614,7 +615,7 @@ def edit_shopping_list_view(request, list_id):
                 item.save()
             
             messages.success(request, f'Shopping list "{updated_list.name}" updated successfully!')
-            return redirect('core:shopping_list_detail', list_id=updated_list.id)
+            return redirect('shopping_list_detail', list_id=updated_list.id)
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -729,3 +730,187 @@ def shopping_list_detail_view(request, list_id):
         'total_actual': total_actual,
     }
     return render(request, 'core/shopping_list_detail.html', context)
+
+#--------------------------------------------------RECIPE MANAGEMENT VIEWS-------------------------------------------------------------------------#
+# Recipe List View
+@login_required(login_url='account_login')
+def recipe_list_view(request):
+    """
+    List all recipes with filtering and search
+    """
+    recipes = Recipe.objects.all().order_by('-created_at')
+    
+    # Filtering
+    cuisine_filter = request.GET.get('cuisine', '')
+    difficulty_filter = request.GET.get('difficulty', '')
+    search_query = request.GET.get('search', '')
+    
+    if cuisine_filter:
+        recipes = recipes.filter(cuisine=cuisine_filter)
+    
+    if difficulty_filter:
+        recipes = recipes.filter(difficulty=difficulty_filter)
+    
+    if search_query:
+        recipes = recipes.filter(
+            Q(name__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(ingredients__icontains=search_query) |
+            Q(dietary_tags__icontains=search_query)
+        )
+    
+    # Statistics
+    total_recipes = recipes.count()
+    user_recipes = recipes.filter(created_by=request.user).count()
+    ai_recipes = recipes.filter(is_ai_generated=True).count()
+    
+    context = {
+        'recipes': recipes,
+        'cuisine_filter': cuisine_filter,
+        'difficulty_filter': difficulty_filter,
+        'search_query': search_query,
+        'total_recipes': total_recipes,
+        'user_recipes': user_recipes,
+        'ai_recipes': ai_recipes,
+    }
+    return render(request, 'core/recipe_list.html', context)
+
+# Recipe Detail View
+@login_required(login_url='account_login')
+def recipe_detail_view(request, recipe_id):
+    """
+    View recipe details
+    """
+    recipe = get_object_or_404(Recipe, id=recipe_id)
+    
+    # Parse ingredients into list
+    ingredients_list = []
+    if recipe.ingredients:
+        ingredients_list = [line.strip() for line in recipe.ingredients.split('\n') if line.strip()]
+    
+    # Parse instructions into steps
+    instructions_list = []
+    if recipe.instructions:
+        instructions_list = [line.strip() for line in recipe.instructions.split('\n') if line.strip()]
+    
+    # Calculate total time
+    total_time = recipe.prep_time + recipe.cook_time
+    
+    # Get similar recipes
+    similar_recipes = Recipe.objects.filter(
+        cuisine=recipe.cuisine
+    ).exclude(id=recipe.id).order_by('?')[:4]
+    
+    context = {
+        'recipe': recipe,
+        'ingredients_list': ingredients_list,
+        'instructions_list': instructions_list,
+        'total_time': total_time,
+        'similar_recipes': similar_recipes,
+    }
+    return render(request, 'core/recipe_detail.html', context)
+
+# Create Recipe View
+@login_required(login_url='account_login')
+def create_recipe_view(request):
+    """
+    Create a new recipe
+    """
+    if request.method == 'POST':
+        form = RecipeForm(request.POST, request.FILES)
+        if form.is_valid():
+            recipe = form.save(commit=False)
+            recipe.created_by = request.user
+            
+            # Handle image upload
+            if 'image' in request.FILES:
+                recipe.image = request.FILES['image']
+            
+            recipe.save()
+            messages.success(request, f'Recipe "{recipe.name}" created successfully!')
+            return redirect('core:recipe_detail', recipe_id=recipe.id)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = RecipeForm()
+    
+    context = {
+        'form': form,
+        'title': 'Create New Recipe'
+    }
+    return render(request, 'core/recipe_form.html', context)
+
+# Edit Recipe View
+@login_required(login_url='account_login')
+def edit_recipe_view(request, recipe_id):
+    """
+    Edit existing recipe
+    """
+    recipe = get_object_or_404(Recipe, id=recipe_id)
+    
+    # Check if user owns the recipe or is superuser
+    if recipe.created_by != request.user and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to edit this recipe.')
+        return redirect('core:recipe_detail', recipe_id=recipe.id)
+    
+    if request.method == 'POST':
+        form = RecipeForm(request.POST, request.FILES, instance=recipe)
+        if form.is_valid():
+            updated_recipe = form.save()
+            
+            # Handle image upload
+            if 'image' in request.FILES:
+                updated_recipe.image = request.FILES['image']
+            
+            updated_recipe.save()
+            messages.success(request, f'Recipe "{updated_recipe.name}" updated successfully!')
+            return redirect('core:recipe_detail', recipe_id=updated_recipe.id)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = RecipeForm(instance=recipe)
+    
+    context = {
+        'form': form,
+        'recipe': recipe,
+        'title': f'Edit {recipe.name}'
+    }
+    return render(request, 'core/recipe_form.html', context)
+
+# Delete Recipe View
+@login_required(login_url='account_login')
+def delete_recipe_view(request, recipe_id):
+    """
+    Delete recipe
+    """
+    recipe = get_object_or_404(Recipe, id=recipe_id)
+    
+    # Check if user owns the recipe or is superuser
+    if recipe.created_by != request.user and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to delete this recipe.')
+        return redirect('core:recipe_detail', recipe_id=recipe.id)
+    
+    if request.method == 'POST':
+        recipe_name = recipe.name
+        recipe.delete()
+        messages.success(request, f'Recipe "{recipe_name}" deleted successfully!')
+        return redirect('core:recipe_list')
+    
+    context = {
+        'recipe': recipe
+    }
+    return render(request, 'core/delete_recipe.html', context)
+
+# My Recipes View
+@login_required(login_url='account_login')
+def my_recipes_view(request):
+    """
+    View recipes created by the current user
+    """
+    recipes = Recipe.objects.filter(created_by=request.user).order_by('-created_at')
+    
+    context = {
+        'recipes': recipes,
+        'total_recipes': recipes.count(),
+    }
+    return render(request, 'core/my_recipes.html', context)
