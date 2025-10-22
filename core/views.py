@@ -12,6 +12,7 @@ from django.db.models import Q
 from .services.vision_service import ExpiryDateDetector
 from django.forms import formset_factory
 from core.services.recipe_suggestion_ai import generate_ai_recipe_from_openai
+from core.services.ai_shopping_service import generate_ai_shopping_list
 
 # Helper functions
 def calculate_waste_savings(user):
@@ -530,22 +531,39 @@ def shopping_list_list_view(request):
 @login_required(login_url='account_login')
 def create_shopping_list_view(request):
     """
-    Create a new shopping list with items
+    Create a new shopping list manually or using AI.
+    - Manual mode: uses forms.
+    - AI mode: generates list automatically based on user profile, pantry, and budget.
     """
     ShoppingListItemFormSet = formset_factory(ShoppingListItemForm, extra=3, can_delete=True)
-    
+
+    # --- AI Mode ---
+    if request.method == "GET" and request.GET.get("ai") == "true":
+        messages.info(request, "Generating shopping list with AI... Please wait ")
+
+        ai_list = generate_ai_shopping_list(request.user)
+        if ai_list:
+            messages.success(
+                request,
+                f'AI-generated shopping list "{ai_list.name}" created successfully! '
+                f'Estimated total cost: {ai_list.total_estimated_cost}.'
+            )
+            return redirect('shopping_list_detail', list_id=ai_list.id)
+        else:
+            messages.error(request, "Failed to generate AI shopping list. Please try again.")
+            return redirect('create_shopping_list')
+
+    # --- Manual shopping list creation ---
     if request.method == 'POST':
         form = ShoppingListForm(request.POST)
         formset = ShoppingListItemFormSet(request.POST, prefix='items')
-        
+
         if form.is_valid() and formset.is_valid():
-            # Save shopping list
             shopping_list = form.save(commit=False)
             shopping_list.user = request.user
             shopping_list.total_estimated_cost = 0
             shopping_list.save()
-            
-            # Save shopping list items
+
             total_estimated_cost = 0
             for item_form in formset:
                 if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE', False):
@@ -554,23 +572,26 @@ def create_shopping_list_view(request):
                     if item.estimated_price:
                         total_estimated_cost += item.estimated_price
                     item.save()
-            
+
             # Update total estimated cost
             shopping_list.total_estimated_cost = total_estimated_cost
             shopping_list.save()
-            
-            messages.success(request, f'Shopping list "{shopping_list.name}" created successfully!')
+
+            messages.success(
+                request,
+                f'Shopping list "{shopping_list.name}" created successfully!'
+            )
             return redirect('shopping_list_detail', list_id=shopping_list.id)
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
         form = ShoppingListForm()
         formset = ShoppingListItemFormSet(prefix='items')
-    
+
     context = {
         'form': form,
         'formset': formset,
-        'title': 'Create New Shopping List'
+        'title': 'Create New Shopping List',
     }
     return render(request, 'core/shopping_list_form.html', context)
 

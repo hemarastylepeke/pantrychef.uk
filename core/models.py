@@ -146,8 +146,8 @@ class Recipe(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_LEVELS)
-    prep_time = models.IntegerField(blank=True, null=True)  # ← add this
-    cook_time = models.IntegerField(blank=True, null=True)  # ← same idea
+    prep_time = models.IntegerField(blank=True, null=True)  
+    cook_time = models.IntegerField(blank=True, null=True) 
     cuisine = models.CharField(max_length=50, choices=CUISINE_CHOICES)
     servings = models.IntegerField()
 
