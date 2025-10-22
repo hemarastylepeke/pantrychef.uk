@@ -87,8 +87,12 @@
                         {% for ingredient in ingredients_list %}
                         <div class="flex items-start space-x-3">
                             <div class="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                            <span class="text-gray-700">{{ ingredient }}</span>
+                            <span class="text-gray-700">
+                                {{ ingredient.name }}
+                            </span>
                         </div>
+                        {% empty %}
+                        <p class="text-gray-500">No ingredients listed.</p>
                         {% endfor %}
                     </div>
                 </div>
@@ -104,6 +108,8 @@
                             </div>
                             <p class="text-gray-700 leading-relaxed">{{ instruction }}</p>
                         </div>
+                        {% empty %}
+                        <p class="text-gray-500">No instructions available.</p>
                         {% endfor %}
                     </div>
                 </div>
@@ -142,7 +148,10 @@
                     <div class="space-y-3 text-sm">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Created by:</span>
-                            <span class="font-medium">{{ recipe.created_by.username|default:"System" }}</span>
+                            <!-- ✅ Safely handle missing username -->
+                            <span class="font-medium">
+                                {{ recipe.created_by.email|default:"System" }}
+                            </span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Created:</span>

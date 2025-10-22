@@ -776,32 +776,29 @@ def recipe_list_view(request):
     }
     return render(request, 'core/recipe_list.html', context)
 
-# Recipe Detail View
 @login_required(login_url='account_login')
 def recipe_detail_view(request, recipe_id):
     """
     View recipe details
     """
     recipe = get_object_or_404(Recipe, id=recipe_id)
-    
-    # Parse ingredients into list
-    ingredients_list = []
-    if recipe.ingredients:
-        ingredients_list = [line.strip() for line in recipe.ingredients.split('\n') if line.strip()]
-    
-    # Parse instructions into steps
+
+    # Get ingredients properly (ManyToMany)
+    ingredients_list = recipe.ingredients.all()
+
+    # Parse instructions into steps (still fine since it's text)
     instructions_list = []
     if recipe.instructions:
         instructions_list = [line.strip() for line in recipe.instructions.split('\n') if line.strip()]
-    
-    # Calculate total time
-    total_time = recipe.prep_time + recipe.cook_time
-    
+
+    # Handle prep_time and cook_time safely
+    total_time = (recipe.prep_time or 0) + (recipe.cook_time or 0)
+
     # Get similar recipes
     similar_recipes = Recipe.objects.filter(
         cuisine=recipe.cuisine
     ).exclude(id=recipe.id).order_by('?')[:4]
-    
+
     context = {
         'recipe': recipe,
         'ingredients_list': ingredients_list,
@@ -809,6 +806,7 @@ def recipe_detail_view(request, recipe_id):
         'total_time': total_time,
         'similar_recipes': similar_recipes,
     }
+
     return render(request, 'core/recipe_detail.html', context)
 
 # Create Recipe View
