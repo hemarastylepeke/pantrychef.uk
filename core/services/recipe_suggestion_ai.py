@@ -6,7 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 from accounts.models import UserProfile
-from core.models import Recipe, Ingredient, UserPantry
+from core.models import Recipe, Ingredient, UserPantry, RecipeIngredient
 
 openai.api_key = settings.OPENAI_API_KEY
 
@@ -52,14 +52,14 @@ def build_ai_recipe_context(user):
 def generate_ai_recipe_from_openai(user):
     """
     Generate a complete recipe using OpenAI, based on user’s pantry and dietary data.
-    Populates ALL recipe fields accurately.
+    Populates ALL recipe fields accurately and safely validates ingredient data.
     """
     context = build_ai_recipe_context(user)
 
     # Build dynamic ingredient list from pantry
     pantry_ingredients = [
         f"{item['quantity']} {item['unit']} of {item['ingredient']}"
-        for item in context["pantry"]
+        for item in context.get("pantry", [])
     ]
     ingredient_text = ", ".join(pantry_ingredients) if pantry_ingredients else "none available"
 
@@ -97,7 +97,7 @@ def generate_ai_recipe_from_openai(user):
     """
 
     try:
-        # Send prompt to OpenAI
+        # --- Send prompt to OpenAI ---
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -109,9 +109,14 @@ def generate_ai_recipe_from_openai(user):
 
         ai_content = response.choices[0].message.content.strip()
 
-        # Extract JSON safely even if text contains extra text
+        # Extract JSON safely
         match = re.search(r'\{.*\}', ai_content, re.DOTALL)
         recipe_json = json.loads(match.group()) if match else {}
+
+        # --- Log for debugging ---
+        print("\n--- AI Generated Recipe JSON ---")
+        print(json.dumps(recipe_json, indent=2))
+        print("--------------------------------\n")
 
         # --- Create Recipe instance ---
         recipe = Recipe.objects.create(
@@ -132,20 +137,65 @@ def generate_ai_recipe_from_openai(user):
             is_ai_generated=True,
         )
 
-        # --- Handle ingredient relations properly ---
+        # --- Process Ingredient Data ---
         ingredient_data = recipe_json.get("ingredients", [])
-        ingredient_names = [i["name"].strip().lower() for i in ingredient_data]
+        valid_ingredients = []
 
-        existing_ingredients = Ingredient.objects.filter(name__in=ingredient_names)
+        for i in ingredient_data:
+            if not isinstance(i, dict):
+                continue
+            name = i.get("name")
+            if not name or not isinstance(name, str) or not name.strip():
+                continue
+            valid_ingredients.append({
+                "name": name.strip().lower(),
+                "unit": i.get("unit", "g"),
+                "quantity": float(i.get("quantity", 0))
+            })
+
+        if not valid_ingredients:
+            print("No valid ingredients found in AI response.")
+            return recipe
+
+        # --- Fetch existing ingredients ---
+        valid_names = [i["name"] for i in valid_ingredients]
+        existing_ingredients = Ingredient.objects.filter(name__in=valid_names)
         existing_names = set(i.name.lower() for i in existing_ingredients)
 
-        # Create new ingredients that don’t exist yet
-        new_ingredients = [
-            Ingredient.objects.create(name=i["name"])
-            for i in ingredient_data if i["name"].lower() not in existing_names
-        ]
+        # --- Create missing ingredients safely ---
+        new_ingredients = []
+        for item in valid_ingredients:
+            if item["name"] not in existing_names:
+                new_ing = Ingredient.objects.create(
+                    name=item["name"],
+                    category="other",  # required field
+                    common_units=item["unit"],  
+                    calories=0,  # safe defaults
+                    protein=0,
+                    carbs=0,
+                    fat=0,
+                    fiber=0
+                )
+                new_ingredients.append(new_ing)
 
-        recipe.ingredients.set(list(existing_ingredients) + new_ingredients)
+        # Combine all ingredients
+        all_ingredients = list(existing_ingredients) + new_ingredients
+
+        # --- Create RecipeIngredient links ---
+        ingredient_lookup = {ing.name.lower(): ing for ing in all_ingredients}
+
+        for item in valid_ingredients:
+            ingredient_obj = ingredient_lookup.get(item["name"])
+            if ingredient_obj:
+                RecipeIngredient.objects.create(
+                    recipe=recipe,
+                    ingredient=ingredient_obj,
+                    quantity=item["quantity"],
+                    unit=item["unit"]
+                )
+
+        # --- Recalculate nutrition (optional) ---
+        recipe.calculate_nutrition()
 
         return recipe
 

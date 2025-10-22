@@ -51,6 +51,23 @@ class Ingredient(models.Model):
     
     def get_nutritional_info(self):
         return f"Calories: {self.calories}, Protein: {self.protein}g, Carbs: {self.carbs}g, Fat: {self.fat}g"
+    
+    def get_nutritional_contribution(self, quantity: float, unit: str = None):
+        """
+        Estimate nutritional contribution for this ingredient based on quantity.
+
+        Assumes that calories, protein, carbs, and fat values are per 100g/ml/piece.
+        Adjust proportionally according to the quantity.
+        """
+        # Default assumption: nutrient values are per 100g
+        factor = quantity / 100.0
+
+        return {
+            "calories": self.calories * factor,
+            "protein": self.protein * factor,
+            "carbs": self.carbs * factor,
+            "fat": self.fat * factor,
+        }
 
 # Records to a particular user's  items that they own i.e Tomatoe sauce
 class UserPantry(models.Model):
