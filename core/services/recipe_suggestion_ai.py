@@ -5,8 +5,8 @@ import json
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
-from accounts.models import UserProfile
-from core.models import Recipe, Ingredient, UserPantry, RecipeIngredient, Budget, UserGoal
+from accounts.models import UserProfile, UserGoal
+from core.models import Recipe, Ingredient, UserPantry, RecipeIngredient, Budget
 
 openai.api_key = settings.OPENAI_API_KEY
 

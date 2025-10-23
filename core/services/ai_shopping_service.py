@@ -8,10 +8,10 @@ from django.utils import timezone
 from django.db import transaction
 from django.db.models import Sum, F
 
-from accounts.models import UserProfile
+from accounts.models import UserProfile, UserGoal
 from core.models import (
     Ingredient, UserPantry, ShoppingList, ShoppingListItem, Budget,
-    UserGoal, Recipe, RecipeIngredient, FoodWasteRecord
+    Recipe, RecipeIngredient, FoodWasteRecord
 )
 
 

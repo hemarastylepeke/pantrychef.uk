@@ -107,7 +107,11 @@ class UserGoal(models.Model):
         ('budget_friendly', 'Budget Friendly'),
     ]
     
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user_profile = models.ForeignKey(
+        'UserProfile',
+        on_delete=models.CASCADE,
+        related_name='goals'
+    )
     goal_type = models.CharField(max_length=20, choices=GOAL_TYPES)
     target_value = models.FloatField(null=True, blank=True)
     current_value = models.FloatField(null=True, blank=True)
@@ -121,3 +125,6 @@ class UserGoal(models.Model):
 
     class Meta:
         ordering = ['priority', '-created_at']
+
+    def __str__(self):
+        return f"{self.user_profile.user.email} - {self.get_goal_type_display()}"
