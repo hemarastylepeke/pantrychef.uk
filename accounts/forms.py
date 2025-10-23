@@ -3,7 +3,8 @@ from django.contrib import messages
 from django.contrib.auth import authenticate
 from allauth.account.forms import LoginForm
 from allauth.exceptions import ImmediateHttpResponse
-from .models import UserProfile
+from .models import UserProfile, UserGoal
+from django.forms import inlineformset_factory
 
 class CustomLoginForm(LoginForm):
     def login(self, request, redirect_url=None):
@@ -180,3 +181,31 @@ class PreferencesForm(forms.ModelForm):
                 'placeholder': 'List your favorite cuisines (e.g., Italian, Kenyan, Thai)...'
             }),
         }
+
+class UserGoalForm(forms.ModelForm):
+    class Meta:
+        model = UserGoal
+        fields = ['goal_type', 'target_value', 'target_date', 'priority', 'active']
+        widgets = {
+            'goal_type': forms.Select(attrs={'class': 'form-select'}),
+            'target_value': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'Target value'}),
+            'target_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'priority': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'goal_type': 'Goal Type',
+            'target_value': 'Target Value',
+            'target_date': 'Target Date',
+            'priority': 'Priority',
+            'active': 'Is Active?',
+        }
+
+# Inline formset to allow multiple goals linked to a single UserProfile
+UserGoalFormSet = inlineformset_factory(
+    UserProfile,  # parent model
+    UserGoal,     # child model
+    form=UserGoalForm,
+    extra=1,      # at least one empty form
+    can_delete=True
+)
