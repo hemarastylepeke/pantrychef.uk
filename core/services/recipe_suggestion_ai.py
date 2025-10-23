@@ -1,5 +1,4 @@
-# app/services/ai_recipe_service.py
-
+# core/services/ai_recipe_service.py
 import openai
 import re
 import json
@@ -53,7 +52,7 @@ def build_ai_recipe_context(user):
 def generate_ai_recipe_from_openai(user):
     """
     Generate an AI-powered recipe suggestion based on:
-    - Pantry ingredients (use what’s available)
+    - Pantry ingredients,use what’s available
     - Dietary requirements (avoid allergies)
     - Goal (lose weight, build muscle, etc.)
     - Budget
@@ -94,7 +93,7 @@ def generate_ai_recipe_from_openai(user):
         goal_text = goal.goal_type.replace("_", " ") if goal else "general healthy eating"
         budget_text = f"{budget.amount} {budget.currency}" if budget else "unlimited"
 
-        # 🧠 Comprehensive AI Prompt
+        # Comprehensive AI Prompt
         prompt = f"""
         You are an expert AI chef and nutritionist creating a personalized, balanced meal.
         
@@ -150,7 +149,7 @@ def generate_ai_recipe_from_openai(user):
         match = re.search(r'\{.*\}', ai_text, re.DOTALL)
         recipe_json = json.loads(match.group()) if match else {}
 
-        # ✅ Persist Recipe in DB
+        # Persist Recipe in DB
         recipe = Recipe.objects.create(
             name=recipe_json.get("name", f"AI Recipe {timezone.now().strftime('%Y%m%d%H%M')}"),
             description=recipe_json.get("description", ""),
@@ -169,7 +168,7 @@ def generate_ai_recipe_from_openai(user):
             is_ai_generated=True,
         )
 
-        # ✅ Link Ingredients
+        # Link Ingredients
         for ing in recipe_json.get("ingredients", []):
             name = ing.get("name")
             if not name:
