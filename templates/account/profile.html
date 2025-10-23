@@ -7,7 +7,7 @@
     <!-- Header -->
     <div class="mb-8 text-center">
       <h1 class="text-3xl font-bold text-gray-900">Your Profile</h1>
-      <p class="text-lg text-gray-600 mt-2">Manage your personal information, preferences, and goals</p>
+      <p class="text-lg text-gray-600 mt-2">View your personal information, preferences, and goals</p>
     </div>
 
     {% if messages %}
@@ -106,7 +106,7 @@
         <!-- Dietary Requirements -->
         <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
           <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm-7 4h14"/>
           </svg>
           Dietary Requirements
         </h3>
@@ -120,6 +120,12 @@
             <h4 class="font-semibold text-yellow-800 mb-2">Dietary Restrictions</h4>
             <p class="text-yellow-700">{{ profile.dietary_restrictions|default:"No restrictions" }}</p>
           </div>
+          {% if profile.disliked_ingredients %}
+          <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <h4 class="font-semibold text-orange-800 mb-2">Disliked Ingredients</h4>
+            <p class="text-orange-700">{{ profile.disliked_ingredients }}</p>
+          </div>
+          {% endif %}
         </div>
 
         <!-- Taste Preferences -->
@@ -175,7 +181,7 @@
         {% endif %}
 
         <div class="flex justify-end">
-          <a href="" class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium transition-all duration-200">
+          <a href="{% url 'add_goal' %}" class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium transition-all duration-200">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -190,27 +196,15 @@
 </div>
 
 <style>
-/* Custom styling for better visual appeal */
+/* Gradient animation for header */
 .bg-gradient-to-r {
   background-size: 200% 200%;
-  animation: gradient 3s ease infinite;
+  animation: gradient 5s ease infinite;
 }
-
 @keyframes gradient {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
-}
-
-/* Hover effects for cards */
-.bg-white:hover {
-  transform: translateY(-2px);
-  transition: transform 0.2s ease-in-out;
-}
-
-/* Ensure images are properly displayed */
-img {
-  object-fit: cover;
 }
 </style>
 
