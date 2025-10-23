@@ -1,8 +1,14 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import UserProfile
-from .forms import UserProfileForm, DietaryRequirementsForm, PreferencesForm, CompleteUserProfileForm
+from .models import UserProfile, UserGoal
+from .forms import (
+    UserProfileForm, 
+    DietaryRequirementsForm, 
+    PreferencesForm, 
+    CompleteUserProfileForm, 
+    UserGoalFormSet, UserGoalForm
+)
 
 # Create profile view
 @login_required(login_url='account_login')
@@ -34,19 +40,21 @@ def create_profile_view(request):
 # View and update profile
 @login_required(login_url='account_login')
 def profile_page_view(request):
-    """
-    Display and update the user's profile if it exists.
-    If it doesn't exist, redirect to profile creation.
-    """
+    """Display and update user's profile and goals."""
     try:
         profile = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
         messages.warning(request, 'Please create your profile first.')
         return redirect('create_profile')
 
+    # Instantiate profile forms
     profile_form = UserProfileForm(instance=profile)
     dietary_form = DietaryRequirementsForm(instance=profile)
     preferences_form = PreferencesForm(instance=profile)
+
+    # Goals formset
+    goal_qs = UserGoal.objects.filter(user_profile=profile)
+    goal_formset = UserGoalFormSet(queryset=goal_qs)
 
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
@@ -78,11 +86,27 @@ def profile_page_view(request):
                 return redirect('profile_page')
             messages.error(request, 'Please correct the errors in the preferences form.')
 
+        # Update or add goals
+        elif form_type == 'goals':
+            goal_formset = UserGoalFormSet(request.POST, queryset=goal_qs)
+            if goal_formset.is_valid():
+                instances = goal_formset.save(commit=False)
+                for instance in instances:
+                    instance.user_profile = profile
+                    instance.save()
+                for deleted in goal_formset.deleted_objects:
+                    deleted.delete()
+                messages.success(request, 'Goals updated successfully!')
+                return redirect('profile_page')
+            else:
+                messages.error(request, 'Please correct the errors in your goals.')
+
     context = {
         'profile': profile,
         'profile_form': profile_form,
         'dietary_form': dietary_form,
         'preferences_form': preferences_form,
+        'goal_formset': goal_formset,
     }
     return render(request, 'account/profile.html', context)
 
@@ -90,13 +114,16 @@ def profile_page_view(request):
 @login_required(login_url='account_login')
 def edit_profile_view(request):
     """
-    Edit profile view that handles all profile fields
+    Edit profile view that handles all profile fields and user goals.
     """
     try:
         profile = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
         messages.warning(request, 'Please create your profile first.')
         return redirect('create_profile')
+
+    # Get or create goal record linked to the profile
+    user_goal, created = UserGoal.objects.get_or_create(user_profile=profile, active=True)
 
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
@@ -111,7 +138,6 @@ def edit_profile_view(request):
                 messages.error(request, 'Please correct the errors in the personal information form.')
 
         elif form_type == 'dietary':
-            # Handle dietary fields directly
             profile.allergies = request.POST.get('allergies', '')
             profile.dietary_restrictions = request.POST.get('dietary_restrictions', '')
             profile.disliked_ingredients = request.POST.get('disliked_ingredients', '')
@@ -120,20 +146,34 @@ def edit_profile_view(request):
             return redirect('edit_profile')
 
         elif form_type == 'preferences':
-            # Handle preference fields directly
             profile.preferred_cuisines = request.POST.get('preferred_cuisines', '')
             profile.save()
             messages.success(request, 'Preferences updated successfully!')
             return redirect('edit_profile')
 
-    # Initialize forms
-    profile_form = UserProfileForm(instance=profile)
+        elif form_type == 'goals':
+            goal_form = UserGoalForm(request.POST, instance=user_goal)
+            if goal_form.is_valid():
+                # Ensure goal is always linked to profile before saving
+                goal = goal_form.save(commit=False)
+                goal.user_profile = profile
+                goal.save()
+                messages.success(request, 'Goals updated successfully!')
+                return redirect('edit_profile')
+            else:
+                messages.error(request, 'Please correct the errors in the goals form.')
+
+    else:
+        # Initialize forms for GET request
+        profile_form = UserProfileForm(instance=profile)
+        goal_form = UserGoalForm(instance=user_goal)
 
     context = {
         'profile': profile,
         'profile_form': profile_form,
+        'goal_form': goal_form,
     }
-    
+
     return render(request, 'account/edit_profile.html', context)
 
 # Delete A profile
