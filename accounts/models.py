@@ -94,3 +94,30 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.email}'s Profile"
 
+class UserGoal(models.Model):
+    GOAL_TYPES = [
+        ('lose_weight', 'Lose Weight'),
+        ('gain_weight', 'Gain Weight'),
+        ('build_muscle', 'Build Muscle'),
+        ('maintain_weight', 'Maintain Weight'),
+        ('more_fiber', 'More Fiber'),
+        ('more_iron', 'More Iron'),
+        ('more_veggies', 'More Vegetables'),
+        ('reduce_waste', 'Reduce Food Waste'),
+        ('budget_friendly', 'Budget Friendly'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    goal_type = models.CharField(max_length=20, choices=GOAL_TYPES)
+    target_value = models.FloatField(null=True, blank=True)
+    current_value = models.FloatField(null=True, blank=True)
+    start_date = models.DateField(auto_now_add=True)
+    target_date = models.DateField(null=True, blank=True)
+    active = models.BooleanField(default=True)
+    priority = models.IntegerField(default=1)
+    bmi = models.FloatField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['priority', '-created_at']

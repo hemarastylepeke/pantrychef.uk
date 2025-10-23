@@ -189,7 +189,6 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
         return None
 
 
-
 # Confirm Shopping List (includes waste detection)
 def confirm_shopping_list(user, shopping_list_id, purchased_items_payload, total_actual_cost=None):
     try:
@@ -261,7 +260,7 @@ def confirm_shopping_list(user, shopping_list_id, purchased_items_payload, total
             sl.completed_at = timezone.now()
             sl.save()
 
-        # etect food waste immediately after confirmation
+        # Detect food waste immediately after confirmation
         detect_and_record_food_waste(user)
 
         return sl
