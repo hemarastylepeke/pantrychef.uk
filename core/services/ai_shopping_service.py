@@ -13,8 +13,6 @@ from core.models import (
     UserGoal, Recipe, RecipeIngredient, FoodWasteRecord
 )
 
-openai.api_key = ""  # set in settings / env or import django settings as needed
-
 
 def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
     """

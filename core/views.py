@@ -12,7 +12,7 @@ from django.db.models import Q
 from .services.vision_service import ExpiryDateDetector
 from django.forms import formset_factory
 from core.services.recipe_suggestion_ai import generate_ai_recipe_from_openai
-from core.services.ai_shopping_service import generate_ai_shopping_list
+from core.services.ai_shopping_service import generate_ai_shopping_list, confirm_shopping_list
 
 # Helper functions
 def calculate_waste_savings(user):
@@ -527,73 +527,59 @@ def shopping_list_list_view(request):
     }
     return render(request, 'core/shopping_list_list.html', context)
 
-# Create Shopping List View
 @login_required(login_url='account_login')
 def create_shopping_list_view(request):
     """
-    Create a new shopping list manually or using AI.
-    - Manual mode: uses forms.
-    - AI mode: generates list automatically based on user profile, pantry, and budget.
+    Create an AI-powered shopping list.
+    - Uses the active user budget (weekly/monthly).
+    - Generates a draft list with estimated costs and missing ingredients.
+    - Tracks estimated spending (later compared to actual confirmed spend).
     """
-    ShoppingListItemFormSet = formset_factory(ShoppingListItemForm, extra=3, can_delete=True)
 
-    # --- AI Mode ---
-    if request.method == "GET" and request.GET.get("ai") == "true":
-        messages.info(request, "Generating shopping list with AI... Please wait ")
+    if request.method == "POST":
+        # user can optionally specify a target budget period
+        period = request.POST.get("period") or "weekly"
 
+        # validate user has an active budget
+        budget = Budget.objects.filter(user=request.user, active=True).order_by('-start_date').first()
+        if not budget:
+            messages.error(request, "Please set an active budget before generating a shopping list.")
+            return redirect('budget_setup')
+
+        messages.info(request, "Generating AI-powered shopping list... Please wait a moment.")
+
+        # call the AI generator
         ai_list = generate_ai_shopping_list(request.user)
+
         if ai_list:
+            ai_list.status = "generated"
+            ai_list.period = period
+            ai_list.generated_at = timezone.now()
+            ai_list.save()
+
             messages.success(
                 request,
-                f'AI-generated shopping list "{ai_list.name}" created successfully! '
-                f'Estimated total cost: {ai_list.total_estimated_cost}.'
+                f'AI-generated shopping list "{ai_list.name}" created successfully within your budget of '
+                f'{budget.amount} {budget.currency}. '
+                f'Estimated total cost: {ai_list.total_estimated_cost}. '
+                f'Please review and confirm purchases after shopping.'
             )
             return redirect('shopping_list_detail', list_id=ai_list.id)
         else:
-            messages.error(request, "Failed to generate AI shopping list. Please try again.")
-            return redirect('create_shopping_list')
+            messages.error(request, "AI failed to generate a shopping list. Please try again later.")
+            return redirect('shopping_list_history')
 
-    # --- Manual shopping list creation ---
-    if request.method == 'POST':
-        form = ShoppingListForm(request.POST)
-        formset = ShoppingListItemFormSet(request.POST, prefix='items')
-
-        if form.is_valid() and formset.is_valid():
-            shopping_list = form.save(commit=False)
-            shopping_list.user = request.user
-            shopping_list.total_estimated_cost = 0
-            shopping_list.save()
-
-            total_estimated_cost = 0
-            for item_form in formset:
-                if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE', False):
-                    item = item_form.save(commit=False)
-                    item.shopping_list = shopping_list
-                    if item.estimated_price:
-                        total_estimated_cost += item.estimated_price
-                    item.save()
-
-            # Update total estimated cost
-            shopping_list.total_estimated_cost = total_estimated_cost
-            shopping_list.save()
-
-            messages.success(
-                request,
-                f'Shopping list "{shopping_list.name}" created successfully!'
-            )
-            return redirect('shopping_list_detail', list_id=shopping_list.id)
-        else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = ShoppingListForm()
-        formset = ShoppingListItemFormSet(prefix='items')
+    #
+    active_budget = Budget.objects.filter(user=request.user, active=True).order_by('-start_date').first()
+    if not active_budget:
+        messages.warning(request, "You need to set an active budget before creating an AI shopping list.")
+        return redirect('budget_setup')
 
     context = {
-        'form': form,
-        'formset': formset,
-        'title': 'Create New Shopping List',
+        "title": "AI Smart Shopping List",
+        "active_budget": active_budget,
     }
-    return render(request, 'core/shopping_list_form.html', context)
+    return render(request, "core/ai_shopping_list_setup.html", context)
 
 # Edit Shopping List View
 @login_required(login_url='account_login')
@@ -666,38 +652,6 @@ def edit_shopping_list_view(request, list_id):
     }
     return render(request, 'core/shopping_list_form.html', context)
 
-# Add Item to Shopping List View
-@login_required(login_url='account_login')
-def add_shopping_list_item_view(request, list_id):
-    """
-    Add a single item to existing shopping list
-    """
-    shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
-    
-    if request.method == 'POST':
-        form = ShoppingListItemForm(request.POST)
-        if form.is_valid():
-            item = form.save(commit=False)
-            item.shopping_list = shopping_list
-            item.save()
-            
-            # Update total estimated cost
-            shopping_list.total_estimated_cost = shopping_list.items.aggregate(
-                total=Sum('estimated_price')
-            )['total'] or 0
-            shopping_list.save()
-            
-            messages.success(request, f'Item "{item.ingredient.name}" added to shopping list!')
-            return redirect('shopping_list_detail', list_id=shopping_list.id)
-    else:
-        form = ShoppingListItemForm()
-    
-    context = {
-        'form': form,
-        'shopping_list': shopping_list,
-        'title': 'Add Item to Shopping List'
-    }
-    return render(request, 'core/shopping_list_item_form.html', context)
 
 # Delete Shopping List View
 @login_required(login_url='account_login')
@@ -718,28 +672,66 @@ def delete_shopping_list_view(request, list_id):
     }
     return render(request, 'core/delete_shopping_list.html', context)
 
+
 # Shopping List Detail View
 @login_required(login_url='account_login')
 def shopping_list_detail_view(request, list_id):
     """
-    View shopping list details with all items
+    View shopping list details and allow the user to confirm purchases.
+    Confirmation records actual price/quantity/expiry and updates pantry via service.
     """
     shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
-    
-    # Get items grouped by priority
-    high_priority_items = shopping_list.items.filter(priority='high').order_by('ingredient__name')
-    medium_priority_items = shopping_list.items.filter(priority='medium').order_by('ingredient__name')
-    low_priority_items = shopping_list.items.filter(priority='low').order_by('ingredient__name')
-    
-    # Calculate item statistics
-    total_items = shopping_list.items.count()
-    purchased_items = shopping_list.items.filter(purchased=True).count()
+    items_qs = shopping_list.items.select_related('ingredient').order_by('-priority', 'ingredient__name')
+
+    # Group by priority for display
+    high_priority_items = items_qs.filter(priority='high')
+    medium_priority_items = items_qs.filter(priority='medium')
+    low_priority_items = items_qs.filter(priority='low')
+
+    total_items = items_qs.count()
+    purchased_items = items_qs.filter(purchased=True).count()
     purchased_percentage = (purchased_items / total_items * 100) if total_items > 0 else 0
-    
-    # Cost analysis
-    total_estimated = shopping_list.items.aggregate(total=Sum('estimated_price'))['total'] or 0
-    total_actual = shopping_list.items.aggregate(total=Sum('actual_price'))['total'] or 0
-    
+
+    total_estimated = items_qs.aggregate(total=Sum('estimated_price'))['total'] or 0
+    total_actual = items_qs.aggregate(total=Sum('actual_price'))['total'] or 0
+
+    # Handle confirmation POST
+    if request.method == "POST" and request.POST.get("action") == "confirm":
+        purchased_payload = []
+        # Build payload for each item
+        for sli in items_qs:
+            prefix_id = str(sli.id)
+            purchased_flag = request.POST.get(f"purchased_{prefix_id}") == "on"
+            # Only include items user marked as purchased
+            if purchased_flag:
+                actual_price_raw = request.POST.get(f"actual_price_{prefix_id}")
+                qty_raw = request.POST.get(f"purchased_qty_{prefix_id}")
+                expiry_date_raw = request.POST.get(f"expiry_date_{prefix_id}")
+                expiry_file = request.FILES.get(f"expiry_image_{prefix_id}")  # file or None
+
+                item_payload = {
+                    "shopping_list_item_id": sli.id,
+                    "actual_price": float(actual_price_raw) if actual_price_raw else None,
+                    "purchased_quantity": float(qty_raw) if qty_raw else sli.quantity,
+                    "expiry_date": expiry_date_raw if expiry_date_raw else None,
+                    "expiry_label_image": expiry_file,  # confirm_shopping_list may accept file reference
+                }
+                purchased_payload.append(item_payload)
+
+        # optional overall total provided by user (or calculated in service)
+        total_actual_cost_raw = request.POST.get("total_actual_cost")
+        total_actual_cost = float(total_actual_cost_raw) if total_actual_cost_raw else None
+
+        # call service to confirm purchases
+        result = confirm_shopping_list(request.user, shopping_list.id, purchased_payload, total_actual_cost=total_actual_cost)
+
+        if result:
+            messages.success(request, "Purchases confirmed and pantry updated. Spending recorded.")
+            return redirect('shopping_list_detail', list_id=shopping_list.id)
+        else:
+            messages.error(request, "Failed to confirm purchases — please try again.")
+            return redirect('shopping_list_detail', list_id=shopping_list.id)
+
     context = {
         'shopping_list': shopping_list,
         'high_priority_items': high_priority_items,

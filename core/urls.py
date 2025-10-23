@@ -33,7 +33,6 @@ urlpatterns = [
     path('shopping_lists/add/', views.create_shopping_list_view, name='create_shopping_list'),
     path('shopping_lists/<int:list_id>/edit/', views.edit_shopping_list_view, name='edit_shopping_list'),
     path('shopping_lists/<int:list_id>/delete/', views.delete_shopping_list_view, name='delete_shopping_list'),
-    path('shopping_lists/<int:list_id>/add-item/', views.add_shopping_list_item_view, name='add_shopping_list_item'),
 
     # Recipe URLs
     path('recipes/', views.recipe_list_view, name='recipe_list'),

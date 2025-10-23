@@ -1,292 +1,163 @@
 {% extends 'core/base.html' %}
-
-{% block title %}{{ shopping_list.name }} - Pantry Pilot{% endblock %}
-
+{% load static %}
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-8">
-    <div class="container mx-auto px-4 max-w-6xl">
-        <!-- Header -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-            <div>
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-800">{{ shopping_list.name }}</h1>
-                <div class="flex items-center gap-4 mt-2">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
-                        {% if shopping_list.status == 'completed' %}bg-green-100 text-green-800
-                        {% elif shopping_list.status == 'cancelled' %}bg-red-100 text-red-800
-                        {% elif shopping_list.status == 'confirmed' %}bg-blue-100 text-blue-800
-                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                        {{ shopping_list.get_status_display }}
-                    </span>
-                    <span class="text-gray-600 text-sm">
-                        Created: {{ shopping_list.created_at|date:"M d, Y" }}
-                    </span>
-                    {% if shopping_list.completed_at %}
-                    <span class="text-gray-600 text-sm">
-                        Completed: {{ shopping_list.completed_at|date:"M d, Y" }}
-                    </span>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="flex gap-2 mt-4 md:mt-0">
-                <a href="#" 
-                   class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 font-medium">
-                    Edit
-                </a>
-                <a href="{% url 'shopping_list_list' %}" 
-                   class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 font-medium">
-                    Back to Lists
-                </a>
-            </div>
-        </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column - Items -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Progress -->
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Shopping Progress</h3>
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-gray-600">{{ purchased_items }}/{{ total_items }} items purchased</span>
-                        <span class="font-medium text-green-600">{{ purchased_percentage|floatformat:0 }}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-3">
-                        <div class="bg-green-500 h-3 rounded-full transition-all duration-500" 
-                             style="width: {{ purchased_percentage }}%"></div>
-                    </div>
-                </div>
+<div class="max-w-4xl mx-auto py-8 px-4">
+  <h1 class="text-2xl font-bold text-gray-800 mb-6">{{ shopping_list.name }}</h1>
 
-                <!-- High Priority Items -->
-                {% if high_priority_items %}
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xl font-semibold text-gray-800">High Priority Items</h3>
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                            {{ high_priority_items.count }} items
-                        </span>
-                    </div>
-                    <div class="space-y-3">
-                        {% for item in high_priority_items %}
-                        <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-                            <div class="flex items-center space-x-3">
-                                <input type="checkbox" {% if item.purchased %}checked{% endif %} 
-                                       class="w-5 h-5 text-red-600 bg-white border-red-300 rounded focus:ring-red-500">
-                                <div>
-                                    <h4 class="font-medium text-gray-800">{{ item.ingredient.name }}</h4>
-                                    <p class="text-sm text-gray-600">{{ item.quantity }} {{ item.unit }}</p>
-                                    {% if item.reason %}
-                                    <p class="text-xs text-gray-500 mt-1">{{ item.reason }}</p>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <span class="font-medium text-gray-800">${{ item.estimated_price|floatformat:2 }}</span>
-                                {% if item.actual_price %}
-                                <span class="block text-sm text-green-600">${{ item.actual_price|floatformat:2 }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
 
-                <!-- Medium Priority Items -->
-                {% if medium_priority_items %}
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xl font-semibold text-gray-800">Medium Priority Items</h3>
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                            {{ medium_priority_items.count }} items
-                        </span>
-                    </div>
-                    <div class="space-y-3">
-                        {% for item in medium_priority_items %}
-                        <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                            <div class="flex items-center space-x-3">
-                                <input type="checkbox" {% if item.purchased %}checked{% endif %} 
-                                       class="w-5 h-5 text-yellow-600 bg-white border-yellow-300 rounded focus:ring-yellow-500">
-                                <div>
-                                    <h4 class="font-medium text-gray-800">{{ item.ingredient.name }}</h4>
-                                    <p class="text-sm text-gray-600">{{ item.quantity }} {{ item.unit }}</p>
-                                    {% if item.reason %}
-                                    <p class="text-xs text-gray-500 mt-1">{{ item.reason }}</p>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <span class="font-medium text-gray-800">${{ item.estimated_price|floatformat:2 }}</span>
-                                {% if item.actual_price %}
-                                <span class="block text-sm text-green-600">${{ item.actual_price|floatformat:2 }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Low Priority Items -->
-                {% if low_priority_items %}
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xl font-semibold text-gray-800">Low Priority Items</h3>
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                            {{ low_priority_items.count }} items
-                        </span>
-                    </div>
-                    <div class="space-y-3">
-                        {% for item in low_priority_items %}
-                        <div class="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                            <div class="flex items-center space-x-3">
-                                <input type="checkbox" {% if item.purchased %}checked{% endif %} 
-                                       class="w-5 h-5 text-green-600 bg-white border-green-300 rounded focus:ring-green-500">
-                                <div>
-                                    <h4 class="font-medium text-gray-800">{{ item.ingredient.name }}</h4>
-                                    <p class="text-sm text-gray-600">{{ item.quantity }} {{ item.unit }}</p>
-                                    {% if item.reason %}
-                                    <p class="text-xs text-gray-500 mt-1">{{ item.reason }}</p>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <span class="font-medium text-gray-800">${{ item.estimated_price|floatformat:2 }}</span>
-                                {% if item.actual_price %}
-                                <span class="block text-sm text-green-600">${{ item.actual_price|floatformat:2 }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Right Column - Summary & Actions -->
-            <div class="space-y-6">
-                <!-- Budget Summary -->
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Budget Summary</h3>
-                    <div class="space-y-3">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Budget Limit:</span>
-                            <span class="font-medium">${{ shopping_list.budget_limit|floatformat:2 }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Estimated Cost:</span>
-                            <span class="font-medium">${{ total_estimated|floatformat:2 }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Actual Cost:</span>
-                            <span class="font-medium {% if total_actual %}text-green-600{% else %}text-gray-600{% endif %}">
-                                {% if total_actual %}
-                                    ${{ total_actual|floatformat:2 }}
-                                {% else %}
-                                    Not set
-                                {% endif %}
-                            </span>
-                        </div>
-                        <div class="border-t border-gray-200 pt-3">
-                            <div class="flex justify-between font-semibold">
-                                <span class="text-gray-800">Remaining:</span>
-                                <span class="{% if total_estimated > shopping_list.budget_limit %}text-red-600{% else %}text-green-600{% endif %}">
-                                    ${{ shopping_list.budget_limit|add:"-0"|floatformat:2|add:"-" }}{{ total_estimated|floatformat:2 }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Performance Scores -->
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Performance Scores</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <div class="flex justify-between text-sm text-gray-600 mb-1">
-                                <span>Pantry Utilization</span>
-                                <span>{{ shopping_list.pantry_utilization|floatformat:0 }}%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-blue-500 h-2 rounded-full" 
-                                     style="width: {{ shopping_list.pantry_utilization }}%"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-sm text-gray-600 mb-1">
-                                <span>Goal Alignment</span>
-                                <span>{{ shopping_list.goal_alignment|floatformat:0 }}%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-green-500 h-2 rounded-full" 
-                                     style="width: {{ shopping_list.goal_alignment }}%"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-sm text-gray-600 mb-1">
-                                <span>Waste Reduction</span>
-                                <span>{{ shopping_list.waste_reduction_score|floatformat:0 }}%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-purple-500 h-2 rounded-full" 
-                                     style="width: {{ shopping_list.waste_reduction_score }}%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h3>
-                    <div class="space-y-3">
-                        <button class="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium">
-                            Mark as Completed
-                        </button>
-                        <a href="#" 
-                           class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg text-center block transition-colors duration-200 font-medium">
-                            Edit List
-                        </a>
-                        <a href="{% url 'shopping_list_list' %}" 
-                           class="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg text-center block transition-colors duration-200 font-medium">
-                            Back to Lists
-                        </a>
-                    </div>
-                </div>
-
-                <!-- List Information -->
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">List Information</h3>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Status:</span>
-                            <span class="font-medium">{{ shopping_list.get_status_display }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Created:</span>
-                            <span class="font-medium">{{ shopping_list.created_at|date:"M d, Y" }}</span>
-                        </div>
-                        {% if shopping_list.completed_at %}
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Completed:</span>
-                            <span class="font-medium">{{ shopping_list.completed_at|date:"M d, Y" }}</span>
-                        </div>
-                        {% endif %}
-                        {% if shopping_list.week_number %}
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Week:</span>
-                            <span class="font-medium">{{ shopping_list.year }} W{{ shopping_list.week_number }}</span>
-                        </div>
-                        {% endif %}
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Total Items:</span>
-                            <span class="font-medium">{{ total_items }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Purchased:</span>
-                            <span class="font-medium text-green-600">{{ purchased_items }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- ===== Progress Overview ===== -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <h3 class="text-xl font-semibold text-gray-800 mb-4">Shopping Progress</h3>
+      <div class="flex items-center justify-between mb-4">
+        <span class="text-gray-600">
+          {{ purchased_items }}/{{ total_items }} items purchased
+        </span>
+        <span class="font-medium text-green-600">{{ purchased_percentage|floatformat:0 }}%</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-3">
+        <div class="bg-green-500 h-3 rounded-full transition-all duration-500"
+             style="width: {{ purchased_percentage }}%"></div>
+      </div>
+      <p class="mt-3 text-sm text-gray-600">
+        Budget: <span class="font-medium">{{ budget.amount }} {{ budget.currency }}</span><br>
+        Total Estimated: <span class="font-medium">${{ shopping_list.total_estimated_cost|floatformat:2 }}</span>
+      </p>
     </div>
+
+    <!-- ====== High Priority Items ====== -->
+    {% if high_priority_items %}
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-semibold text-gray-800">High Priority Items</h3>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+          {{ high_priority_items.count }} items
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        {% for item in high_priority_items %}
+        <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+          <div class="flex items-center space-x-3">
+            <input type="checkbox" name="purchased_{{ item.id }}" {% if item.purchased %}checked{% endif %}
+                   class="w-5 h-5 text-red-600 border-red-300 rounded focus:ring-red-500">
+            <div>
+              <h4 class="font-medium text-gray-800">{{ item.ingredient.name }}</h4>
+              <p class="text-sm text-gray-600">{{ item.quantity }} {{ item.unit }}</p>
+              {% if item.reason %}
+              <p class="text-xs text-gray-500 mt-1">{{ item.reason }}</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mt-3 md:mt-0 text-right space-y-1">
+            <div>
+              <span class="font-medium text-gray-800">${{ item.estimated_price|floatformat:2 }}</span>
+              {% if item.actual_price %}
+              <span class="block text-sm text-green-600">Actual: ${{ item.actual_price|floatformat:2 }}</span>
+              {% endif %}
+            </div>
+
+            <div class="mt-2 text-right">
+              <input type="number" step="0.01" min="0" name="actual_price_{{ item.id }}" placeholder="Actual $"
+                     class="w-28 border rounded p-1 text-sm" />
+              <input type="number" step="0.01" min="0" name="purchased_qty_{{ item.id }}" placeholder="Qty"
+                     class="w-20 border rounded p-1 text-sm ml-2" />
+            </div>
+
+            <div class="mt-2 text-right">
+              <input type="date" name="expiry_date_{{ item.id }}" class="border rounded p-1 text-sm" />
+              <input type="file" name="expiry_image_{{ item.id }}" accept="image/*"
+                     class="mt-1 text-sm block w-full md:w-auto" />
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ====== Medium Priority Items ====== -->
+    {% if medium_priority_items %}
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-semibold text-gray-800">Medium Priority Items</h3>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+          {{ medium_priority_items.count }} items
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        {% for item in medium_priority_items %}
+        <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+          <div class="flex items-center space-x-3">
+            <input type="checkbox" name="purchased_{{ item.id }}" {% if item.purchased %}checked{% endif %}
+                   class="w-5 h-5 text-yellow-600 border-yellow-300 rounded focus:ring-yellow-500">
+            <div>
+              <h4 class="font-medium text-gray-800">{{ item.ingredient.name }}</h4>
+              <p class="text-sm text-gray-600">{{ item.quantity }} {{ item.unit }}</p>
+            </div>
+          </div>
+
+          <div class="mt-3 md:mt-0 text-right space-y-1">
+            <span class="font-medium text-gray-800">${{ item.estimated_price|floatformat:2 }}</span>
+            <input type="number" step="0.01" min="0" name="actual_price_{{ item.id }}" placeholder="Actual $"
+                   class="w-28 border rounded p-1 text-sm mt-1" />
+            <input type="date" name="expiry_date_{{ item.id }}" class="border rounded p-1 text-sm mt-1" />
+            <input type="file" name="expiry_image_{{ item.id }}" accept="image/*" class="mt-1 text-sm block w-full md:w-auto" />
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ====== Low Priority Items ====== -->
+    {% if low_priority_items %}
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-semibold text-gray-800">Low Priority Items</h3>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+          {{ low_priority_items.count }} items
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        {% for item in low_priority_items %}
+        <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+          <div class="flex items-center space-x-3">
+            <input type="checkbox" name="purchased_{{ item.id }}" {% if item.purchased %}checked{% endif %}
+                   class="w-5 h-5 text-green-600 border-green-300 rounded focus:ring-green-500">
+            <div>
+              <h4 class="font-medium text-gray-800">{{ item.ingredient.name }}</h4>
+              <p class="text-sm text-gray-600">{{ item.quantity }} {{ item.unit }}</p>
+            </div>
+          </div>
+
+          <div class="mt-3 md:mt-0 text-right space-y-1">
+            <span class="font-medium text-gray-800">${{ item.estimated_price|floatformat:2 }}</span>
+            <input type="number" step="0.01" min="0" name="actual_price_{{ item.id }}" placeholder="Actual $"
+                   class="w-28 border rounded p-1 text-sm mt-1" />
+            <input type="date" name="expiry_date_{{ item.id }}" class="border rounded p-1 text-sm mt-1" />
+            <input type="file" name="expiry_image_{{ item.id }}" accept="image/*" class="mt-1 text-sm block w-full md:w-auto" />
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ====== Confirm Purchases Button ====== -->
+    <div class="mt-8">
+      <input type="hidden" name="action" value="confirm" />
+      <button type="submit"
+              class="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium">
+        Confirm Purchases & Update Pantry
+      </button>
+    </div>
+  </form>
 </div>
+
 {% endblock %}
