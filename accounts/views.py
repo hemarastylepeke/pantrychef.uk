@@ -58,16 +58,18 @@ def profile_page_view(request):
         messages.warning(request, 'Please create your profile first.')
         return redirect('create_profile')
 
-    # Fetch user's goals
+    # Fetch user's goals and calculate progress
     goals = UserGoal.objects.filter(user_profile=profile)
+    for goal in goals:
+        target = goal.target_value or 1  # avoid division by zero
+        current = goal.current_value or 0
+        goal.progress_percentage = min(round((current / target) * 100), 100)
 
     context = {
         'profile': profile,
         'goals': goals,
     }
     return render(request, 'account/profile.html', context)
-
-
 
 @login_required(login_url='account_login')
 def edit_profile_view(request):
