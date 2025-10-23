@@ -1,0 +1,46 @@
+{% extends "core/base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto mt-10">
+  <h2 class="text-2xl font-bold mb-6">🥦 Food Waste Analytics</h2>
+
+  <div class="bg-white shadow p-6 rounded-lg">
+    <p><strong>Total Cost Wasted:</strong> {{ total_wasted_cost }} KES</p>
+    <p><strong>Total Quantity Wasted:</strong> {{ total_wasted_qty }} units</p>
+
+    <h3 class="mt-6 font-semibold">Waste by Reason</h3>
+    <ul class="list-disc ml-6">
+      {% for entry in waste_by_reason %}
+      <li>{{ entry.reason }} — {{ entry.total }} units</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="mt-8">
+    <h3 class="text-lg font-semibold">Detailed Records</h3>
+    <table class="w-full mt-2 border">
+      <thead>
+        <tr class="bg-gray-100 text-left">
+          <th class="p-2">Ingredient</th>
+          <th class="p-2">Reason</th>
+          <th class="p-2">Qty Wasted</th>
+          <th class="p-2">Cost</th>
+          <th class="p-2">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in waste_records %}
+        <tr class="border-t">
+          <td class="p-2">{{ record.ingredient.name }}</td>
+          <td class="p-2">{{ record.get_reason_display }}</td>
+          <td class="p-2">{{ record.quantity_wasted }} {{ record.unit }}</td>
+          <td class="p-2">{{ record.cost }}</td>
+          <td class="p-2">{{ record.waste_date }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="p-4 text-center">No food waste detected yet!</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

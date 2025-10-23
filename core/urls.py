@@ -41,5 +41,7 @@ urlpatterns = [
     path('recipes/<int:recipe_id>/', views.recipe_detail_view, name='recipe_detail'),
     path('recipes/<int:recipe_id>/edit/', views.edit_recipe_view, name='edit_recipe'),
     path('recipes/<int:recipe_id>/delete/', views.delete_recipe_view, name='delete_recipe'),
+
+    path('analytics/food_waste/', views.food_waste_analytics_view, name='food_waste_analytics'),
     
 ]

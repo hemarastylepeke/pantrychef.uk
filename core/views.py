@@ -5,14 +5,14 @@ from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
 import json
-from .models import UserPantry, Ingredient, Recipe, Budget, ShoppingList
+from .models import UserPantry, Ingredient, Recipe, Budget, ShoppingList, ShoppingListItem, FoodWasteRecord
 from django.db.models import Sum
 from .forms import PantryItemForm, IngredientForm, BudgetForm, ShoppingListForm, ShoppingListItemForm, RecipeForm
 from django.db.models import Q
 from .services.vision_service import ExpiryDateDetector
 from django.forms import formset_factory
 from core.services.recipe_suggestion_ai import generate_ai_recipe_from_openai
-from core.services.ai_shopping_service import generate_ai_shopping_list, confirm_shopping_list
+from core.services.ai_shopping_service import generate_ai_shopping_list, confirm_shopping_list, detect_and_record_food_waste
 
 # Helper functions
 def calculate_waste_savings(user):
@@ -567,7 +567,7 @@ def create_shopping_list_view(request):
             return redirect('shopping_list_detail', list_id=ai_list.id)
         else:
             messages.error(request, "AI failed to generate a shopping list. Please try again later.")
-            return redirect('shopping_list_history')
+            return redirect('shopping_list_list')
 
     #
     active_budget = Budget.objects.filter(user=request.user, active=True).order_by('-start_date').first()
@@ -679,6 +679,7 @@ def shopping_list_detail_view(request, list_id):
     """
     View shopping list details and allow the user to confirm purchases.
     Confirmation records actual price/quantity/expiry and updates pantry via service.
+    After confirmation, triggers food waste detection and redirects to analytics.
     """
     shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
     items_qs = shopping_list.items.select_related('ingredient').order_by('-priority', 'ingredient__name')
@@ -698,40 +699,51 @@ def shopping_list_detail_view(request, list_id):
     # Handle confirmation POST
     if request.method == "POST" and request.POST.get("action") == "confirm":
         purchased_payload = []
-        # Build payload for each item
         for sli in items_qs:
             prefix_id = str(sli.id)
             purchased_flag = request.POST.get(f"purchased_{prefix_id}") == "on"
-            # Only include items user marked as purchased
             if purchased_flag:
                 actual_price_raw = request.POST.get(f"actual_price_{prefix_id}")
                 qty_raw = request.POST.get(f"purchased_qty_{prefix_id}")
                 expiry_date_raw = request.POST.get(f"expiry_date_{prefix_id}")
-                expiry_file = request.FILES.get(f"expiry_image_{prefix_id}")  # file or None
+                expiry_file = request.FILES.get(f"expiry_image_{prefix_id}")
 
                 item_payload = {
                     "shopping_list_item_id": sli.id,
                     "actual_price": float(actual_price_raw) if actual_price_raw else None,
                     "purchased_quantity": float(qty_raw) if qty_raw else sli.quantity,
                     "expiry_date": expiry_date_raw if expiry_date_raw else None,
-                    "expiry_label_image": expiry_file,  # confirm_shopping_list may accept file reference
+                    "expiry_label_image": expiry_file,
                 }
                 purchased_payload.append(item_payload)
 
-        # optional overall total provided by user (or calculated in service)
         total_actual_cost_raw = request.POST.get("total_actual_cost")
         total_actual_cost = float(total_actual_cost_raw) if total_actual_cost_raw else None
 
-        # call service to confirm purchases
-        result = confirm_shopping_list(request.user, shopping_list.id, purchased_payload, total_actual_cost=total_actual_cost)
+        # Step 1: confirm purchases via service
+        result = confirm_shopping_list(
+            request.user,
+            shopping_list.id,
+            purchased_payload,
+            total_actual_cost=total_actual_cost
+        )
 
         if result:
-            messages.success(request, "Purchases confirmed and pantry updated. Spending recorded.")
-            return redirect('shopping_list_detail', list_id=shopping_list.id)
+            # Detect food waste right after confirmation
+            try:
+                detect_and_record_food_waste(request.user)
+                messages.success(request, "Purchases confirmed, pantry updated, and food waste analysis complete.")
+            except Exception as e:
+                messages.warning(request, f"Confirmed purchases, but food waste analysis failed: {str(e)}")
+
+            # Redirect to analytics dashboard
+            return redirect('food_waste_analytics')
+
         else:
             messages.error(request, "Failed to confirm purchases — please try again.")
             return redirect('shopping_list_detail', list_id=shopping_list.id)
 
+    # GET request — show list detail
     context = {
         'shopping_list': shopping_list,
         'high_priority_items': high_priority_items,
@@ -924,53 +936,30 @@ def my_recipes_view(request):
     }
     return render(request, 'core/my_recipes.html', context)
 
+# Food Waste Analytics View
+def food_waste_analytics_view(request):
+    """
+    Display user's food waste analytics after shopping list confirmation.
+    """
+    user = request.user
+    waste_records = FoodWasteRecord.objects.filter(user=user)
 
-    # pending implementation of AI-generated weekly shopping list
-# @login_required
-# def generate_weekly_shopping_list(request):
-#     """
-#     AI generates shopping list based on:
-#     - User's budget
-#     - Health goals (from UserGoal)
-#     - Dietary restrictions (from UserProfile)
-#     - Current pantry items
-#     - Past shopping patterns
-#     """
-#     if request.method == 'POST':
-#         # Get user data
-#         budget = Budget.objects.filter(user=request.user, active=True).first()
-#         goals = UserGoal.objects.filter(user=request.user, active=True)
-#         pantry_items = UserPantry.objects.filter(user=request.user, status='active')
-        
-#         # AI logic to generate shopping list
-#         suggested_items = ai_shopping_suggestions(
-#             budget=budget,
-#             goals=goals,
-#             pantry=pantry_items,
-#             dietary_restrictions=request.user.profile.dietary_restrictions
-#         )
-        
-#         # Create shopping list
-#         shopping_list = ShoppingList.objects.create(
-#             user=request.user,
-#             name=f"Weekly Shopping List - {timezone.now().strftime('%Y-%m-%d')}",
-#             budget_limit=budget.amount if budget else 100,
-#             status='generated',
-#             week_number=timezone.now().isocalendar()[1],
-#             year=timezone.now().year,
-#             month=timezone.now().month
-#         )
-        
-#         # Add suggested items
-#         for item in suggested_items:
-#             ShoppingListItem.objects.create(
-#                 shopping_list=shopping_list,
-#                 ingredient=item['ingredient'],
-#                 quantity=item['quantity'],
-#                 unit=item['unit'],
-#                 estimated_price=item['estimated_price'],
-#                 priority=item['priority'],
-#                 reason=item['reason']  # AI explanation
-#             )
-        
-#         return redirect('core:shopping_list_detail', list_id=shopping_list.id)
+    total_wasted_cost = waste_records.aggregate(Sum('cost'))['cost__sum'] or 0
+    total_wasted_qty = waste_records.aggregate(Sum('quantity_wasted'))['quantity_wasted__sum'] or 0
+
+    by_reason = (
+        waste_records.values('reason')
+        .annotate(total=Sum('quantity_wasted'))
+        .order_by('-total')
+    )
+
+    context = {
+        "total_wasted_cost": total_wasted_cost,
+        "total_wasted_qty": total_wasted_qty,
+        "waste_by_reason": by_reason,
+        "waste_records": waste_records,
+    }
+
+    return render(request, "core/food_waste_analytics.html", context)
+
+   

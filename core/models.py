@@ -118,7 +118,7 @@ class UserPantry(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.username} - {self.ingredient.name}"
+        return f"{self.user.email} - {self.ingredient.name}"
 
 
 class Recipe(models.Model):
@@ -270,7 +270,7 @@ class ShoppingList(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.username} - {self.name} - {self.created_at.date()}"
+        return f"{self.user.email} - {self.created_at.date()}"
 
 
 class ShoppingListItem(models.Model):
