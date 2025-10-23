@@ -185,7 +185,7 @@ class PreferencesForm(forms.ModelForm):
 class UserGoalForm(forms.ModelForm):
     class Meta:
         model = UserGoal
-        fields = ['goal_type', 'target_value', 'target_date', 'priority', 'active']
+        fields = ['goal_type', 'current_value', 'target_value', 'target_date', 'priority', 'active']
         widgets = {
             'goal_type': forms.Select(attrs={'class': 'form-select'}),
             'target_value': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'Target value'}),

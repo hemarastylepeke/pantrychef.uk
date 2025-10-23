@@ -30,14 +30,12 @@
       </nav>
     </div>
 
-    <!-- Profile Information Tab -->
+    <!-- Profile Tab -->
     <div id="profile-tab-content" class="tab-content active">
       <form method="post" enctype="multipart/form-data" class="space-y-6">
         {% csrf_token %}
         <input type="hidden" name="form_type" value="profile">
-
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <!-- Profile Image -->
           <div class="col-span-1 flex flex-col items-center">
             <div class="w-40 h-40 bg-gray-100 rounded-xl overflow-hidden border border-gray-300 flex items-center justify-center shadow-inner mb-4">
               <img id="profile-preview" src="{% if profile.profile_image %}{{ profile.profile_image.url }}{% else %}{% static 'profile_images/default_profile_image.png' %}{% endif %}" class="object-cover w-full h-full">
@@ -48,7 +46,6 @@
             </label>
           </div>
 
-          <!-- Personal Info -->
           <div class="col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
             {% for field in profile_form %}
               {% if field.name != 'profile_image' %}
@@ -72,12 +69,11 @@
       </form>
     </div>
 
-    <!-- Dietary Requirements Tab -->
+    <!-- Dietary Tab -->
     <div id="dietary-tab-content" class="tab-content hidden">
       <form method="post" class="space-y-6">
         {% csrf_token %}
         <input type="hidden" name="form_type" value="dietary">
-
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Allergies</label>
@@ -106,7 +102,6 @@
       <form method="post" class="space-y-6">
         {% csrf_token %}
         <input type="hidden" name="form_type" value="preferences">
-
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Preferred Cuisines</label>
@@ -120,15 +115,6 @@
               <option value="medium" {% if profile.spice_level == 'medium' %}selected{% endif %}>Medium</option>
               <option value="spicy" {% if profile.spice_level == 'spicy' %}selected{% endif %}>Spicy</option>
               <option value="very_spicy" {% if profile.spice_level == 'very_spicy' %}selected{% endif %}>Very Spicy</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Preferred Cooking Time</label>
-            <select name="cooking_time" class="w-full border border-gray-300 rounded-md p-3 focus:ring-green-500 focus:border-green-500">
-              <option value="">Select time</option>
-              <option value="quick" {% if profile.cooking_time == 'quick' %}selected{% endif %}>Quick (under 30 mins)</option>
-              <option value="moderate" {% if profile.cooking_time == 'moderate' %}selected{% endif %}>Moderate (30-60 mins)</option>
-              <option value="slow" {% if profile.cooking_time == 'slow' %}selected{% endif %}>Slow (over 60 mins)</option>
             </select>
           </div>
         </div>
@@ -147,36 +133,21 @@
         {% csrf_token %}
         <input type="hidden" name="form_type" value="goals">
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-          <h3 class="text-xl font-semibold text-gray-800">Your Goals</h3>
-          {% for goal in goals %}
-          <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-400 p-6 space-y-6">
+          <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Goals</h3>
+
+          <!-- Render the Django form fields -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for field in goal_form %}
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Goal Type</label>
-                <input type="text" name="goal_type_{{ goal.id }}" value="{{ goal.goal_type }}" class="w-full border border-gray-300 rounded-md p-3">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                  <p class="text-sm text-red-600 mt-1">{{ field.errors|first }}</p>
+                {% endif %}
               </div>
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Target Value</label>
-                <input type="number" step="0.1" name="target_value_{{ goal.id }}" value="{{ goal.target_value }}" class="w-full border border-gray-300 rounded-md p-3">
-              </div>
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Target Date</label>
-                <input type="date" name="target_date_{{ goal.id }}" value="{{ goal.target_date|date:'Y-m-d' }}" class="w-full border border-gray-300 rounded-md p-3">
-              </div>
-            </div>
-            <div class="mt-4">
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Priority</label>
-              <select name="priority_{{ goal.id }}" class="w-full border border-gray-300 rounded-md p-3">
-                <option value="low" {% if goal.priority == 'low' %}selected{% endif %}>Low</option>
-                <option value="medium" {% if goal.priority == 'medium' %}selected{% endif %}>Medium</option>
-                <option value="high" {% if goal.priority == 'high' %}selected{% endif %}>High</option>
-              </select>
-            </div>
+            {% endfor %}
           </div>
-          {% empty %}
-          <p class="text-gray-500 italic">You haven’t set any goals yet.</p>
-          {% endfor %}
         </div>
 
         <div class="flex justify-end pt-6 border-t border-gray-200">
@@ -186,19 +157,6 @@
         </div>
       </form>
     </div>
-
-    <!-- Delete Profile -->
-    <div class="mt-12 pt-8 border-t border-gray-200">
-      <div class="bg-red-50 border border-red-200 rounded-xl p-6">
-        <h3 class="text-lg font-semibold text-red-800 mb-2">Delete Profile</h3>
-        <p class="text-red-700 mb-4">
-          Once deleted, all your profile data and goals will be permanently removed.
-        </p>
-        <a href="{% url 'delete_profile' %}" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-all">
-          Delete Profile
-        </a>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -206,34 +164,26 @@
 document.addEventListener('DOMContentLoaded', function() {
   const tabButtons = document.querySelectorAll('.tab-button');
   const tabContents = document.querySelectorAll('.tab-content');
+
   tabButtons.forEach(btn => {
     btn.addEventListener('click', function() {
       const target = this.dataset.tab;
+
+      // Remove active class from all buttons and hide all contents
       tabButtons.forEach(b => b.classList.remove('border-green-500', 'text-green-600'));
+      tabContents.forEach(c => {
+        c.classList.add('hidden');
+        c.classList.remove('active');
+      });
+
+      // Activate the clicked button and corresponding tab content
       this.classList.add('border-green-500', 'text-green-600');
-      tabContents.forEach(c => c.classList.add('hidden'));
-      document.getElementById(`${target}-tab-content`).classList.remove('hidden');
+      const activeContent = document.getElementById(`${target}-tab-content`);
+      activeContent.classList.remove('hidden');
+      activeContent.classList.add('active');
     });
   });
-
-  // Image preview
-  const fileInput = document.querySelector('input[type="file"][name="profile_image"]');
-  const preview = document.getElementById('profile-preview');
-  if (fileInput) {
-    fileInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = evt => preview.src = evt.target.result;
-        reader.readAsDataURL(file);
-      }
-    });
-  }
 });
 </script>
 
-<style>
-.tab-content.hidden { display: none; }
-.tab-content.active { display: block; }
-</style>
 {% endblock %}

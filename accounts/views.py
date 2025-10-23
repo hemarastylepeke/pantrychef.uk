@@ -14,27 +14,40 @@ from .forms import (
 @login_required(login_url='account_login')
 def create_profile_view(request):
     """
-    Allow a user to manually create a profile after account creation.
+    Allow a user to manually create a profile after account creation, including setting goals.
     """
-    # Prevent duplicate profiles
     if UserProfile.objects.filter(user=request.user).exists():
         messages.info(request, 'You already have a profile.')
         return redirect('profile_page')
 
     if request.method == 'POST':
-        form = CompleteUserProfileForm(request.POST, request.FILES)
-        if form.is_valid():
-            profile = form.save(commit=False)
+        profile_form = CompleteUserProfileForm(request.POST, request.FILES)
+        goal_form = UserGoalForm(request.POST)  # no instance yet, new goal
+
+        if profile_form.is_valid() and goal_form.is_valid():
+            profile = profile_form.save(commit=False)
             profile.user = request.user
             profile.save()
-            messages.success(request, 'Your profile was created successfully!')
+
+            # Save goal linked to profile
+            goal = goal_form.save(commit=False)
+            goal.user_profile = profile
+            goal.save()
+
+            messages.success(request, 'Your profile and goals were created successfully!')
             return redirect('profile_page')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
-        form = CompleteUserProfileForm()
+        profile_form = CompleteUserProfileForm()
+        goal_form = UserGoalForm()
 
-    return render(request, 'account/create_profile.html', {'form': form})
+    context = {
+        'form': profile_form,
+        'goal_form': goal_form,
+    }
+    return render(request, 'account/create_profile.html', context)
+
 
 
 # View and update profile
