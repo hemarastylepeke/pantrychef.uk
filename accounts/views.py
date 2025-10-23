@@ -67,7 +67,7 @@ def profile_page_view(request):
 
     context = {
         'profile': profile,
-        'goals': goals,
+        'user_goals': goals,
     }
     return render(request, 'account/profile.html', context)
 
