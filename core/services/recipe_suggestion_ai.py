@@ -1,4 +1,5 @@
 # app/services/ai_recipe_service.py
+
 import openai
 import re
 import json
@@ -38,7 +39,7 @@ def build_ai_recipe_context(user):
         "pantry": [
             {
                 "ingredient": item.ingredient.name,
-                "quantity": item.quantity,
+                "quantity": float(item.quantity),
                 "unit": item.unit,
                 "expiry_date": str(item.expiry_date),
                 "is_expiring_soon": item in expiring_soon,
@@ -51,8 +52,13 @@ def build_ai_recipe_context(user):
 
 def generate_ai_recipe_from_openai(user):
     """
-    Generate a complete recipe using OpenAI, based on user’s pantry, dietary, and budget context.
-    Returns Recipe instance or None.
+    Generate an AI-powered recipe suggestion based on:
+    - Pantry ingredients (use what’s available)
+    - Dietary requirements (avoid allergies)
+    - Goal (lose weight, build muscle, etc.)
+    - Budget
+    - Preferred cuisine
+    - Difficulty, time, and adult portion size
     """
     try:
         profile = UserProfile.objects.get(user=user)
@@ -88,60 +94,63 @@ def generate_ai_recipe_from_openai(user):
         goal_text = goal.goal_type.replace("_", " ") if goal else "general healthy eating"
         budget_text = f"{budget.amount} {budget.currency}" if budget else "unlimited"
 
-        # Prompt for recipe generation
+        # 🧠 Comprehensive AI Prompt
         prompt = f"""
-        You are an expert AI chef creating a meal to reduce food waste and stay within a weekly budget.
-        User context:
+        You are an expert AI chef and nutritionist creating a personalized, balanced meal.
+        
+        User Context:
         - Goal: {goal_text}
-        - Budget limit: {budget_text}
-        - Allergies (avoid): {allergies}
-        - Preferred cuisines: {cuisines}
-        - Pantry items: {json.dumps(pantry_data, indent=2)}
+        - Budget: {budget_text}
+        - Allergies (strictly avoid): {allergies}
+        - Preferred cuisines: {cuisines or ["any"]}
+        - Pantry ingredients: {json.dumps(pantry_data, indent=2)}
         - Recently cooked recipes: {list(recent_recipes)}
 
-        Your task:
-        1. Create one unique, balanced, affordable recipe using mostly pantry items.
-        2. Prefer using ingredients that are expiring soon.
-        3. Avoid allergens and repeated dishes from recent recipes.
-        4. Stay mindful of user’s goal (e.g., lose weight → low calorie, build muscle → high protein).
-        5. Suggest quantities for 1 adult serving.
+        Your job:
+        1. Use pantry ingredients as much as possible (especially those expiring soon).
+        2. Avoid ingredients the user is allergic to.
+        3. Suggest a recipe suitable for 1 adult portion size.
+        4. Stay within the user’s budget range when suggesting new ingredients.
+        5. Choose a cuisine from the user’s preferences (or any suitable one if none).
+        6. Include difficulty level (easy, medium, hard) and total cooking time (prep + cook).
+        7. The recipe must align with the user’s goal — e.g., high protein for muscle gain, low carb for weight loss.
+        8. Avoid repeating recipes from the recent list.
 
-        Respond ONLY with valid JSON:
+        Return ONLY valid JSON structured as:
         {{
             "name": "Recipe Name",
-            "description": "Short appetizing description",
+            "description": "Brief appetizing summary",
             "cuisine": "kenyan | italian | mexican | asian | indian | mediterranean | american | other",
             "difficulty": "easy | medium | hard",
             "prep_time": number,
             "cook_time": number,
-            "servings": number,
+            "servings": 1,
             "ingredients": [
                 {{"name": "IngredientName", "quantity": number, "unit": "g/ml/pieces"}}
             ],
-            "instructions": "Step-by-step guide",
+            "instructions": "Step-by-step preparation guide",
             "total_calories": number,
             "total_protein": number,
             "total_carbs": number,
             "total_fat": number,
-            "dietary_tags": "comma-separated tags"
+            "dietary_tags": "comma-separated tags like gluten-free, high-protein, low-fat"
         }}
         """
 
-        # Send to OpenAI
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a professional chef and nutritionist."},
+                {"role": "system", "content": "You are a professional AI chef focused on personalized, healthy meal planning."},
                 {"role": "user", "content": prompt},
             ],
-            temperature=0.6,
+            temperature=0.55,
         )
 
         ai_text = response.choices[0].message.content.strip()
         match = re.search(r'\{.*\}', ai_text, re.DOTALL)
         recipe_json = json.loads(match.group()) if match else {}
 
-        # Save Recipe
+        # ✅ Persist Recipe in DB
         recipe = Recipe.objects.create(
             name=recipe_json.get("name", f"AI Recipe {timezone.now().strftime('%Y%m%d%H%M')}"),
             description=recipe_json.get("description", ""),
@@ -160,7 +169,7 @@ def generate_ai_recipe_from_openai(user):
             is_ai_generated=True,
         )
 
-        # Ingredients
+        # ✅ Link Ingredients
         for ing in recipe_json.get("ingredients", []):
             name = ing.get("name")
             if not name:
