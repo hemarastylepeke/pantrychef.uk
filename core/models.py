@@ -3,6 +3,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import Sum
 from decimal import Decimal
+from django.db.models.functions import Lower
 
 User = settings.AUTH_USER_MODEL
 
@@ -47,6 +48,13 @@ class Ingredient(models.Model):
             models.Index(fields=['name']),
             models.Index(fields=['category']),
             models.Index(fields=['barcode']),
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                expressions=[Lower('name')],
+                name='unique_lower_name'
+            )
         ]
 
     def __str__(self):

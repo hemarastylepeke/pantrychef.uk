@@ -168,7 +168,7 @@ def generate_ai_recipe_from_openai(user):
             is_ai_generated=True,
         )
 
-        # Link Ingredients
+        # Link Ingredients from our db
         for ing in recipe_json.get("ingredients", []):
             name = ing.get("name")
             if not name:
