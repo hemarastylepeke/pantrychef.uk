@@ -159,7 +159,7 @@
                   <h4 class="text-lg font-semibold text-gray-800">{{ goal.get_goal_type_display }}</h4>
                   <p class="text-sm text-gray-600 mt-1">
                     Target: <span class="font-medium">{{ goal.target_value|default:"N/A" }}</span> by 
-                    <span class="text-green-600 font-medium">{{ goal.target_date|date:"M d, Y" }}</span>
+                    <span class="text-gray-900 font-medium">{{ goal.target_date|date:"M d, Y" }}</span>
                   </p>
                   <p class="text-sm text-gray-600 mt-1">
                     Current: {{ goal.current_value|default:0 }} • Priority: <span class="capitalize">{{ goal.priority }}</span>

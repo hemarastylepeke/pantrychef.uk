@@ -2,15 +2,23 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
+
+    # Profile management URLs
     path('profile/create/', views.create_profile_view, name='create_profile'),
-
-    # View & update profile
     path('profile/', views.profile_page_view, name='profile_page'),
-
-    # Delete profile
     path('profile/delete/', views.delete_profile_view, name='delete_profile'),
     path('profile/edit/', views.edit_profile_view, name='edit_profile'),
 ]
+
+
+
+
+
+
+
+
+
+
 # urlpatterns = [
 #     path('accounts/login/', views.login_view, name='account_login'),
 #     path('accounts/signup/', views.signup_view, name='account_signup'),

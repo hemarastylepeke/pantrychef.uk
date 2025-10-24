@@ -699,6 +699,8 @@ def shopping_list_detail_view(request, list_id):
     # Handle confirmation POST
     if request.method == "POST" and request.POST.get("action") == "confirm":
         purchased_payload = []
+        total_actual_cost = Decimal('0.00')
+        
         for sli in items_qs:
             prefix_id = str(sli.id)
             purchased_flag = request.POST.get(f"purchased_{prefix_id}") == "on"
@@ -708,33 +710,64 @@ def shopping_list_detail_view(request, list_id):
                 expiry_date_raw = request.POST.get(f"expiry_date_{prefix_id}")
                 expiry_file = request.FILES.get(f"expiry_image_{prefix_id}")
 
+                # Calculate actual price for this item
+                actual_price = Decimal(actual_price_raw) if actual_price_raw else sli.estimated_price
+                total_actual_cost += actual_price
+
                 item_payload = {
                     "shopping_list_item_id": sli.id,
-                    "actual_price": float(actual_price_raw) if actual_price_raw else None,
+                    "actual_price": float(actual_price) if actual_price else None,
                     "purchased_quantity": float(qty_raw) if qty_raw else sli.quantity,
                     "expiry_date": expiry_date_raw if expiry_date_raw else None,
                     "expiry_label_image": expiry_file,
                 }
                 purchased_payload.append(item_payload)
 
+        # Get the total actual cost from form or calculate from items
         total_actual_cost_raw = request.POST.get("total_actual_cost")
-        total_actual_cost = float(total_actual_cost_raw) if total_actual_cost_raw else None
+        if total_actual_cost_raw:
+            total_actual_cost = Decimal(total_actual_cost_raw)
 
         # Step 1: confirm purchases via service
         result = confirm_shopping_list(
             request.user,
             shopping_list.id,
             purchased_payload,
-            total_actual_cost=total_actual_cost
+            total_actual_cost=float(total_actual_cost)
         )
 
         if result:
-            # Detect food waste right after confirmation
+            # Update budget spending
             try:
+                # Get active budget for current period
+                today = timezone.now().date()
+                active_budget = Budget.objects.filter(
+                    user=request.user,
+                    active=True,
+                    start_date__lte=today,
+                    end_date__gte=today
+                ).first()
+                
+                if active_budget:
+                    # Add the total actual cost to budget's amount_spent
+                    active_budget.amount_spent += total_actual_cost
+                    active_budget.save()
+                    
+                    messages.success(request, 
+                        f'Purchases confirmed! ${total_actual_cost} added to your budget tracking. '
+                        f'Remaining budget: ${active_budget.get_remaining_budget()}'
+                    )
+                else:
+                    messages.success(request, 
+                        f'Purchases confirmed! ${total_actual_cost} spent. '
+                        'No active budget found for tracking.'
+                    )
+                
+                # Detect food waste right after confirmation
                 detect_and_record_food_waste(request.user)
-                messages.success(request, "Purchases confirmed, pantry updated, and food waste analysis complete.")
+                
             except Exception as e:
-                messages.warning(request, f"Confirmed purchases, but food waste analysis failed: {str(e)}")
+                messages.warning(request, f"Confirmed purchases, but budget tracking failed: {str(e)}")
 
             # Redirect to analytics dashboard
             return redirect('food_waste_analytics')
