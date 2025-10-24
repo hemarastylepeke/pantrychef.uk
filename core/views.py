@@ -16,97 +16,68 @@ from core.services.ai_shopping_service import generate_ai_shopping_list, confirm
 from decimal import Decimal
 from django.db import transaction
 
-
-# Helper functions
-def calculate_waste_savings(user):
-    """Calculate total waste savings for the user"""
-    # Implement your logic here
-    return 156  # Example value
-
-def get_recipe_suggestions(user):
-    """Get AI-powered recipe suggestions based on pantry items"""
-    # Implement your logic here
-    return [
-        {
-            'name': 'Veggie Omelette',
-            'matching_ingredients': ['eggs', 'spinach', 'tomatoes'],
-            'match_percentage': 95,
-            'prep_time': 15,
-            'calories': 320,
-            'rating': 4.5
-        },
-        {
-            'name': 'Pasta Pomodoro', 
-            'matching_ingredients': ['pasta', 'tomatoes', 'basil'],
-            'match_percentage': 88,
-            'prep_time': 25,
-            'calories': 450,
-            'rating': 4.2
-        }
-    ]
-
 # Pantry Management Views
-@login_required(login_url='account_login')
-def pantry_dashboard_view(request):
-    """
-    Main pantry dashboard showing current inventory and alerts
-    """
-    # Get user's pantry items
-    pantry_items = UserPantry.objects.filter(user=request.user, status='active').order_by('expiry_date')
+# @login_required(login_url='account_login')
+# def pantry_dashboard_view(request):
+#     """
+#     Main pantry dashboard showing current inventory and alerts
+#     """
+#     # Get user's pantry items
+#     pantry_items = UserPantry.objects.filter(user=request.user, status='active').order_by('expiry_date')
     
-    # Get items expiring soon (within 3 days)
-    soon = timezone.now().date() + timedelta(days=3)
-    expiring_soon = pantry_items.filter(expiry_date__lte=soon)
+#     # Get items expiring soon (within 3 days)
+#     soon = timezone.now().date() + timedelta(days=3)
+#     expiring_soon = pantry_items.filter(expiry_date__lte=soon)
     
-    # Add days until expiry for template
-    for item in expiring_soon:
-        item.days_until_expiry = (item.expiry_date - timezone.now().date()).days
+#     # Add days until expiry for template
+#     for item in expiring_soon:
+#         item.days_until_expiry = (item.expiry_date - timezone.now().date()).days
     
-    # Get recently expired items
-    expired_items = pantry_items.filter(expiry_date__lt=timezone.now().date())
+#     # Get recently expired items
+#     expired_items = pantry_items.filter(expiry_date__lt=timezone.now().date())
     
-    # Calculate pantry statistics
-    total_items = pantry_items.count()
-    total_value = sum(item.price for item in pantry_items if item.price)
+#     # Calculate pantry statistics
+#     total_items = pantry_items.count()
+#     total_value = sum(item.price for item in pantry_items if item.price)
     
-    # Calculate waste savings
-    waste_savings = calculate_waste_savings(request.user)
+#     # Calculate waste savings
+#     waste_savings = calculate_waste_savings(request.user)
     
-    # Recipe suggestions
-    recipe_suggestions = get_recipe_suggestions(request.user)
+#     # Recipe suggestions
+#     recipe_suggestions = get_recipe_suggestions(request.user)
     
-    # Waste reduction tips
-    waste_tips = [
-        "Freeze leftover bread to use for croutons or breadcrumbs.",
-        "Use vegetable scraps to make homemade broth.",
-        "Plan meals around ingredients that will expire soon.",
-        "Store herbs in water to keep them fresh longer.",
-        "Use overripe fruits in smoothies or baking."
-    ]
+#     # Waste reduction tips
+#     waste_tips = [
+#         "Freeze leftover bread to use for croutons or breadcrumbs.",
+#         "Use vegetable scraps to make homemade broth.",
+#         "Plan meals around ingredients that will expire soon.",
+#         "Store herbs in water to keep them fresh longer.",
+#         "Use overripe fruits in smoothies or baking."
+#     ]
     
-    # Budget information
-    current_budget = Budget.objects.filter(user=request.user, active=True).first()
-    budget_percentage = 0
-    if current_budget:
-        budget_percentage = min(100, int((current_budget.amount_spent / current_budget.amount) * 100))
+#     # Budget information
+#     current_budget = Budget.objects.filter(user=request.user, active=True).first()
+#     budget_percentage = 0
+#     if current_budget:
+#         budget_percentage = min(100, int((current_budget.amount_spent / current_budget.amount) * 100))
     
-    context = {
-        'pantry_items': pantry_items,
-        'expiring_soon': expiring_soon,
-        'expired_items': expired_items,
-        'total_items': total_items,
-        'total_value': total_value,
-        'waste_savings': waste_savings,
-        'waste_reduction_percentage': 24,
-        'recipes_created': Recipe.objects.filter(created_by=request.user).count(),
-        'pantry_utilization': 85,
-        'current_budget': current_budget,
-        'budget_percentage': budget_percentage,
-        'recipe_suggestions': recipe_suggestions,
-        'waste_tips': waste_tips,
-        'pantry_form': PantryItemForm(),
-    }
-    return render(request, 'core/pantry_dashboard.html', context)
+#     context = {
+#         'pantry_items': pantry_items,
+#         'expiring_soon': expiring_soon,
+#         'expired_items': expired_items,
+#         'total_items': total_items,
+#         'total_value': total_value,
+#         'waste_savings': waste_savings,
+#         'waste_reduction_percentage': 24,
+#         'recipes_created': Recipe.objects.filter(created_by=request.user).count(),
+#         'pantry_utilization': 85,
+#         'current_budget': current_budget,
+#         'budget_percentage': budget_percentage,
+#         'recipe_suggestions': recipe_suggestions,
+#         'waste_tips': waste_tips,
+#         'pantry_form': PantryItemForm(),
+#     }
+#     return render(request, 'core/pantry_dashboard.html', context)
 
 
 #-------------------------------------------------------PANTRY MANAGEMENT VIEWS---------------------------------------------------------------------------#
