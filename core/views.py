@@ -13,6 +13,7 @@ from .services.vision_service import ExpiryDateDetector
 from django.forms import formset_factory
 from core.services.recipe_suggestion_ai import generate_ai_recipe_from_openai
 from core.services.ai_shopping_service import generate_ai_shopping_list, confirm_shopping_list, detect_and_record_food_waste
+import decimal
 
 # Helper functions
 def calculate_waste_savings(user):
@@ -330,12 +331,18 @@ def budget_detail_view(request, budget_id):
     days_remaining = (budget.end_date - timezone.now().date()).days if budget.end_date else 0
     daily_budget = (budget.amount - budget.amount_spent) / max(days_remaining, 1) if days_remaining > 0 else 0
     
-    # Get recent shopping lists for this budget period
-    shopping_lists = ShoppingList.objects.filter(
+    # Get confirmed shopping lists for this budget period with their actual spending
+    confirmed_shopping_lists = ShoppingList.objects.filter(
         user=request.user,
-        created_at__date__gte=budget.start_date,
-        created_at__date__lte=budget.end_date if budget.end_date else timezone.now().date()
-    ).order_by('-created_at')[:10]
+        status='confirmed',
+        completed_at__date__gte=budget.start_date,
+        completed_at__date__lte=budget.end_date if budget.end_date else timezone.now().date()
+    ).order_by('-completed_at')
+    
+    # Calculate total from confirmed shopping lists
+    total_from_shopping_lists = confirmed_shopping_lists.aggregate(
+        total=Sum('total_actual_cost')
+    )['total'] or Decimal('0.00')
     
     # Get pantry items purchased during budget period
     pantry_items = UserPantry.objects.filter(
@@ -344,14 +351,40 @@ def budget_detail_view(request, budget_id):
         purchase_date__lte=budget.end_date if budget.end_date else timezone.now().date()
     ).exclude(price__isnull=True).order_by('-purchase_date')[:15]
     
+    # Calculate total from pantry items
+    pantry_spending = pantry_items.aggregate(total=Sum('price'))['total'] or Decimal('0.00')
+    
+    # Weekly spending breakdown
+    weekly_spending = []
+    if budget.period == 'weekly':
+        current_date = budget.start_date
+        while current_date <= (budget.end_date or timezone.now().date()):
+            week_end = current_date + timedelta(days=6)
+            week_spending = ShoppingList.objects.filter(
+                user=request.user,
+                status='confirmed',
+                completed_at__date__gte=current_date,
+                completed_at__date__lte=week_end
+            ).aggregate(total=Sum('total_actual_cost'))['total'] or Decimal('0.00')
+            
+            weekly_spending.append({
+                'week': f"Week {len(weekly_spending) + 1}",
+                'period': f"{current_date.strftime('%b %d')} - {week_end.strftime('%b %d')}",
+                'amount': week_spending
+            })
+            current_date = week_end + timedelta(days=1)
+    
     context = {
         'budget': budget,
         'spending_percentage': min(spending_percentage, 100),
         'days_remaining': max(days_remaining, 0),
         'daily_budget': daily_budget,
-        'shopping_lists': shopping_lists,
+        'confirmed_shopping_lists': confirmed_shopping_lists[:10],
+        'total_from_shopping_lists': total_from_shopping_lists,
         'pantry_items': pantry_items,
+        'pantry_spending': pantry_spending,
         'remaining_budget': budget.amount - budget.amount_spent,
+        'weekly_spending': weekly_spending,
     }
     return render(request, 'core/budget_detail.html', context)
 

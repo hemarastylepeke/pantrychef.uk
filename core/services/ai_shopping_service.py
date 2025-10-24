@@ -260,9 +260,6 @@ def confirm_shopping_list(user, shopping_list_id, purchased_items_payload, total
             sl.completed_at = timezone.now()
             sl.save()
 
-        # Detect food waste immediately after confirmation
-        detect_and_record_food_waste(user)
-
         return sl
 
     except Exception as e:
