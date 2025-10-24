@@ -1,5 +1,8 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
+from django.db.models import Sum
+from decimal import Decimal
 
 User = settings.AUTH_USER_MODEL
 
@@ -413,3 +416,59 @@ class Budget(models.Model):
     
     def get_status_display(self):
         return "Active" if self.active else "Inactive"
+    
+    def get_confirmed_shopping_lists(self):
+        """Get all confirmed shopping lists for this budget period"""
+        return ShoppingList.objects.filter(
+            user=self.user,
+            status='confirmed',
+            completed_at__date__gte=self.start_date,
+            completed_at__date__lte=self.end_date if self.end_date else timezone.now().date()
+        ).order_by('-completed_at')
+    
+    def get_total_spent_from_shopping_lists(self):
+        """Calculate total spent from confirmed shopping lists in this period"""
+        confirmed_lists = self.get_confirmed_shopping_lists()
+        return confirmed_lists.aggregate(
+            total=Sum('total_actual_cost')
+        )['total'] or Decimal('0.00')
+    
+    def sync_amount_spent(self):
+        """Sync amount_spent with actual shopping list data"""
+        self.amount_spent = self.get_total_spent_from_shopping_lists()
+        self.save()
+        return self.amount_spent
+    
+    def get_spending_breakdown(self):
+        """Get spending breakdown by category for analytics"""
+        from django.db.models import Sum
+        
+        shopping_items = ShoppingListItem.objects.filter(
+            shopping_list__user=self.user,
+            shopping_list__status='confirmed',
+            shopping_list__completed_at__date__gte=self.start_date,
+            shopping_list__completed_at__date__lte=self.end_date if self.end_date else timezone.now().date(),
+            purchased=True
+        ).select_related('ingredient')
+        
+        category_breakdown = {}
+        for item in shopping_items:
+            actual_price = item.actual_price or item.estimated_price or Decimal('0.00')
+            category = item.ingredient.category
+            
+            if category not in category_breakdown:
+                category_breakdown[category] = {
+                    'amount': Decimal('0.00'),
+                    'count': 0,
+                    'items': []
+                }
+            
+            category_breakdown[category]['amount'] += actual_price
+            category_breakdown[category]['count'] += 1
+            category_breakdown[category]['items'].append({
+                'name': item.ingredient.name,
+                'amount': actual_price,
+                'quantity': item.quantity
+            })
+        
+        return category_breakdown

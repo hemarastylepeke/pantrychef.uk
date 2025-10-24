@@ -13,7 +13,9 @@ from .services.vision_service import ExpiryDateDetector
 from django.forms import formset_factory
 from core.services.recipe_suggestion_ai import generate_ai_recipe_from_openai
 from core.services.ai_shopping_service import generate_ai_shopping_list, confirm_shopping_list, detect_and_record_food_waste
-import decimal
+from decimal import Decimal
+from django.db import transaction
+
 
 # Helper functions
 def calculate_waste_savings(user):
@@ -326,40 +328,25 @@ def budget_detail_view(request, budget_id):
     """
     budget = get_object_or_404(Budget, id=budget_id, user=request.user)
     
-    # Calculate spending statistics
-    spending_percentage = (budget.amount_spent / budget.amount * 100) if budget.amount > 0 else 0
+    # Calculate spending statistics using Budget model methods
+    spending_percentage = budget.get_spending_percentage()
     days_remaining = (budget.end_date - timezone.now().date()).days if budget.end_date else 0
-    daily_budget = (budget.amount - budget.amount_spent) / max(days_remaining, 1) if days_remaining > 0 else 0
+    daily_budget = budget.get_remaining_budget() / max(days_remaining, 1) if days_remaining > 0 else 0
     
-    # Get confirmed shopping lists for this budget period with their actual spending
-    confirmed_shopping_lists = ShoppingList.objects.filter(
-        user=request.user,
-        status='confirmed',
-        completed_at__date__gte=budget.start_date,
-        completed_at__date__lte=budget.end_date if budget.end_date else timezone.now().date()
-    ).order_by('-completed_at')
+    # Get confirmed shopping lists using Budget model method
+    confirmed_shopping_lists = budget.get_confirmed_shopping_lists()
     
-    # Calculate total from confirmed shopping lists
-    total_from_shopping_lists = confirmed_shopping_lists.aggregate(
-        total=Sum('total_actual_cost')
-    )['total'] or Decimal('0.00')
-    
-    # Get pantry items purchased during budget period
-    pantry_items = UserPantry.objects.filter(
-        user=request.user,
-        purchase_date__gte=budget.start_date,
-        purchase_date__lte=budget.end_date if budget.end_date else timezone.now().date()
-    ).exclude(price__isnull=True).order_by('-purchase_date')[:15]
-    
-    # Calculate total from pantry items
-    pantry_spending = pantry_items.aggregate(total=Sum('price'))['total'] or Decimal('0.00')
+    # Get spending breakdown by category
+    spending_breakdown = budget.get_spending_breakdown()
     
     # Weekly spending breakdown
     weekly_spending = []
     if budget.period == 'weekly':
         current_date = budget.start_date
+        week_count = 1
         while current_date <= (budget.end_date or timezone.now().date()):
-            week_end = current_date + timedelta(days=6)
+            week_end = min(current_date + timedelta(days=6), budget.end_date or timezone.now().date())
+            
             week_spending = ShoppingList.objects.filter(
                 user=request.user,
                 status='confirmed',
@@ -368,11 +355,13 @@ def budget_detail_view(request, budget_id):
             ).aggregate(total=Sum('total_actual_cost'))['total'] or Decimal('0.00')
             
             weekly_spending.append({
-                'week': f"Week {len(weekly_spending) + 1}",
+                'week': f"Week {week_count}",
                 'period': f"{current_date.strftime('%b %d')} - {week_end.strftime('%b %d')}",
                 'amount': week_spending
             })
+            
             current_date = week_end + timedelta(days=1)
+            week_count += 1
     
     context = {
         'budget': budget,
@@ -380,10 +369,9 @@ def budget_detail_view(request, budget_id):
         'days_remaining': max(days_remaining, 0),
         'daily_budget': daily_budget,
         'confirmed_shopping_lists': confirmed_shopping_lists[:10],
-        'total_from_shopping_lists': total_from_shopping_lists,
-        'pantry_items': pantry_items,
-        'pantry_spending': pantry_spending,
-        'remaining_budget': budget.amount - budget.amount_spent,
+        'total_from_shopping_lists': budget.get_total_spent_from_shopping_lists(),
+        'spending_breakdown': spending_breakdown,
+        'remaining_budget': budget.get_remaining_budget(),
         'weekly_spending': weekly_spending,
     }
     return render(request, 'core/budget_detail.html', context)
@@ -712,7 +700,7 @@ def shopping_list_detail_view(request, list_id):
     """
     View shopping list details and allow the user to confirm purchases.
     Confirmation records actual price/quantity/expiry and updates pantry via service.
-    After confirmation, triggers food waste detection and redirects to analytics.
+    After confirmation, updates budget spending and triggers food waste detection.
     """
     shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
     items_qs = shopping_list.items.select_related('ingredient').order_by('-priority', 'ingredient__name')
@@ -726,14 +714,15 @@ def shopping_list_detail_view(request, list_id):
     purchased_items = items_qs.filter(purchased=True).count()
     purchased_percentage = (purchased_items / total_items * 100) if total_items > 0 else 0
 
-    total_estimated = items_qs.aggregate(total=Sum('estimated_price'))['total'] or 0
-    total_actual = items_qs.aggregate(total=Sum('actual_price'))['total'] or 0
+    total_estimated = items_qs.aggregate(total=Sum('estimated_price'))['total'] or Decimal('0.00')
+    total_actual = items_qs.aggregate(total=Sum('actual_price'))['total'] or Decimal('0.00')
 
     # Handle confirmation POST
     if request.method == "POST" and request.POST.get("action") == "confirm":
         purchased_payload = []
         total_actual_cost = Decimal('0.00')
         
+        # Collect all purchased items and calculate total cost
         for sli in items_qs:
             prefix_id = str(sli.id)
             purchased_flag = request.POST.get(f"purchased_{prefix_id}") == "on"
@@ -744,72 +733,110 @@ def shopping_list_detail_view(request, list_id):
                 expiry_file = request.FILES.get(f"expiry_image_{prefix_id}")
 
                 # Calculate actual price for this item
-                actual_price = Decimal(actual_price_raw) if actual_price_raw else sli.estimated_price
+                actual_price = Decimal(actual_price_raw) if actual_price_raw and actual_price_raw.strip() else sli.estimated_price
                 total_actual_cost += actual_price
 
                 item_payload = {
                     "shopping_list_item_id": sli.id,
                     "actual_price": float(actual_price) if actual_price else None,
-                    "purchased_quantity": float(qty_raw) if qty_raw else sli.quantity,
-                    "expiry_date": expiry_date_raw if expiry_date_raw else None,
+                    "purchased_quantity": float(qty_raw) if qty_raw and qty_raw.strip() else sli.quantity,
+                    "expiry_date": expiry_date_raw if expiry_date_raw and expiry_date_raw.strip() else None,
                     "expiry_label_image": expiry_file,
                 }
                 purchased_payload.append(item_payload)
 
-        # Get the total actual cost from form or calculate from items
+        # Use form total if provided, otherwise use calculated total
         total_actual_cost_raw = request.POST.get("total_actual_cost")
-        if total_actual_cost_raw:
-            total_actual_cost = Decimal(total_actual_cost_raw)
-
-        # Step 1: confirm purchases via service
-        result = confirm_shopping_list(
-            request.user,
-            shopping_list.id,
-            purchased_payload,
-            total_actual_cost=float(total_actual_cost)
-        )
-
-        if result:
-            # Update budget spending
+        if total_actual_cost_raw and total_actual_cost_raw.strip():
             try:
-                # Get active budget for current period
-                today = timezone.now().date()
-                active_budget = Budget.objects.filter(
-                    user=request.user,
-                    active=True,
-                    start_date__lte=today,
-                    end_date__gte=today
-                ).first()
-                
-                if active_budget:
-                    # Add the total actual cost to budget's amount_spent
-                    active_budget.amount_spent += total_actual_cost
-                    active_budget.save()
-                    
-                    messages.success(request, 
-                        f'Purchases confirmed! ${total_actual_cost} added to your budget tracking. '
-                        f'Remaining budget: ${active_budget.get_remaining_budget()}'
-                    )
-                else:
-                    messages.success(request, 
-                        f'Purchases confirmed! ${total_actual_cost} spent. '
-                        'No active budget found for tracking.'
-                    )
-                
-                # Detect food waste right after confirmation
-                detect_and_record_food_waste(request.user)
-                
-            except Exception as e:
-                messages.warning(request, f"Confirmed purchases, but budget tracking failed: {str(e)}")
+                total_actual_cost = Decimal(total_actual_cost_raw)
+            except (decimal.InvalidOperation, ValueError):
+                # If invalid decimal, keep the calculated total
+                pass
 
-            # Redirect to analytics dashboard
-            return redirect('food_waste_analytics')
-
-        else:
-            messages.error(request, "Failed to confirm purchases — please try again.")
+        # Validate that at least one item was purchased
+        if not purchased_payload:
+            messages.error(request, "Please select at least one item to confirm as purchased.")
             return redirect('shopping_list_detail', list_id=shopping_list.id)
 
-    # GET request — show list detail
+        try:
+            # Step 1: confirm purchases via service within transaction
+            with transaction.atomic():
+                result = confirm_shopping_list(
+                    request.user,
+                    shopping_list.id,
+                    purchased_payload,
+                    total_actual_cost=float(total_actual_cost)
+                )
+
+                if result:
+                    # Step 2: Update budget spending
+                    today = timezone.now().date()
+                    active_budget = Budget.objects.filter(
+                        user=request.user,
+                        active=True,
+                        start_date__lte=today,
+                        end_date__gte=today
+                    ).first()
+                    
+                    if active_budget:
+                        # Use the sync_amount_spent method to ensure data consistency
+                        new_total_spent = active_budget.sync_amount_spent()
+                        
+                        messages.success(request, 
+                            f'Shopping list confirmed successfully! ${total_actual_cost} spent. '
+                            f'Budget updated: ${new_total_spent} spent of ${active_budget.amount}. '
+                            f'Remaining budget: ${active_budget.get_remaining_budget()}'
+                        )
+                    else:
+                        messages.success(request, 
+                            f'Shopping list confirmed successfully! ${total_actual_cost} spent. '
+                            'No active budget found for tracking.'
+                        )
+                    
+                    # Step 3: Detect food waste after confirmation
+                    try:
+                        waste_detected = detect_and_record_food_waste(request.user)
+                        if waste_detected:
+                            messages.info(request, "Food waste analysis completed. Check your analytics for details.")
+                    except Exception as waste_error:
+                        messages.warning(request, f"Purchases confirmed, but food waste analysis encountered an issue: {str(waste_error)}")
+                    
+                    # Step 4: Redirect to food waste analytics
+                    return redirect('food_waste_analytics')
+                
+                else:
+                    messages.error(request, "Failed to confirm purchases. Please try again.")
+                    return redirect('shopping_list_detail', list_id=shopping_list.id)
+                    
+        except Exception as e:
+            messages.error(request, f"Error confirming purchases: {str(e)}")
+            return redirect('shopping_list_detail', list_id=shopping_list.id)
+
+    # GET request — show list detail with enhanced context
+    today = timezone.now().date()
+    active_budget = Budget.objects.filter(
+        user=request.user,
+        active=True,
+        start_date__lte=today,
+        end_date__gte=today
+    ).first()
+    
+    # Calculate budget information for display
+    budget_info = None
+    if active_budget:
+        budget_info = {
+            'budget': active_budget,
+            'remaining': active_budget.get_remaining_budget(),
+            'spent_percentage': active_budget.get_spending_percentage(),
+            'daily_budget': active_budget.get_remaining_budget() / max((active_budget.end_date - today).days, 1) if active_budget.end_date else Decimal('0.00')
+        }
+
+    # Get items that need expiry dates (helpful for user)
+    items_needing_expiry = items_qs.filter(
+        ingredient__typical_expiry_days__isnull=False
+    ).exclude(ingredient__typical_expiry_days=0)
+
     context = {
         'shopping_list': shopping_list,
         'high_priority_items': high_priority_items,
@@ -820,6 +847,10 @@ def shopping_list_detail_view(request, list_id):
         'purchased_percentage': purchased_percentage,
         'total_estimated': total_estimated,
         'total_actual': total_actual,
+        'active_budget': active_budget,
+        'budget_info': budget_info,
+        'items_needing_expiry': items_needing_expiry,
+        'today': today,
     }
     return render(request, 'core/shopping_list_detail.html', context)
 
