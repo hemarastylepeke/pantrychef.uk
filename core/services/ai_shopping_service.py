@@ -99,7 +99,7 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
         missing_from_pantry = [ri for ri in recipe_ingredients if ri["name"].lower() not in pantry_names]
 
         allergies = [a.strip().lower() for a in (profile.allergies or "").split(",") if a.strip()]
-        goal = UserGoal.objects.filter(user=user, active=True).first()
+        goal = UserGoal.objects.filter(user_profile__user=user, active=True).first()
         goal_text = goal.goal_type.replace("_", " ") if goal else "healthy eating"
 
         pantry_json = json.dumps([

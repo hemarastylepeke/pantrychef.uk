@@ -62,7 +62,7 @@ def generate_ai_recipe_from_openai(user):
     try:
         profile = UserProfile.objects.get(user=user)
         budget = Budget.objects.filter(user=user, active=True).order_by('-start_date').first()
-        goal = UserGoal.objects.filter(user=user, active=True).order_by('priority').first()
+        goal = UserGoal.objects.filter(user_profile__user=user, active=True).order_by('priority').first()
 
         recent_recipes = Recipe.objects.filter(
             created_by=user,
@@ -173,9 +173,17 @@ def generate_ai_recipe_from_openai(user):
             name = ing.get("name")
             if not name:
                 continue
-            ingredient_obj, _ = Ingredient.objects.get_or_create(
-                name__iexact=name.strip(),
-                defaults={"name": name.strip(), "category": "other"}
+            ingredient_obj = (
+                Ingredient.objects.filter(name__iexact=name.strip()).first()
+                or Ingredient.objects.create(
+                    name=name.strip(),
+                    category="other",
+                    calories=0,
+                    protein=0,
+                    carbs=0,
+                    fat=0,
+                    fiber=0,
+                )
             )
             RecipeIngredient.objects.create(
                 recipe=recipe,

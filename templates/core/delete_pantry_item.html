@@ -7,7 +7,7 @@
     <header>
         <h1>Remove Item from Pantry</h1>
         <nav>
-            <a href="{% url 'pantry_dashboard' %}">Back to Pantry</a>
+            <a href="">Back to Pantry</a>
         </nav>
     </header>
 
@@ -20,7 +20,7 @@
             {% csrf_token %}
             <p>Are you sure you want to remove this item from your pantry?</p>
             <button type="submit">Yes, Remove Item</button>
-            <a href="{% url 'pantry_dashboard' %}">Cancel</a>
+            <a href="">Cancel</a>
         </form>
     </main>
 </body>

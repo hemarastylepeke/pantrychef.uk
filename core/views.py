@@ -94,6 +94,7 @@ def pantry_list_view(request):
     }
     return render(request, 'core/pantry_list.html', context)
 
+
 # Add pantry item view
 @login_required(login_url='account_login')
 def add_pantry_item_view(request):
@@ -114,7 +115,7 @@ def add_pantry_item_view(request):
             
             pantry_item.save()
             messages.success(request, f'{pantry_item.ingredient.name} added to pantry!')
-            return redirect('pantry_dashboard')
+            return redirect('pantry_list')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -173,7 +174,7 @@ def delete_pantry_item_view(request, item_id):
 @login_required(login_url='account_login')
 def ingredient_list_view(request):
     """
-    List all ingredients with search functionality
+    List all ingredients
     """
     ingredients = Ingredient.objects.all().order_by('name')
 
@@ -243,7 +244,7 @@ def delete_ingredient_view(request, ingredient_id):
         ingredient_name = ingredient.name
         ingredient.delete()
         messages.success(request, f'Ingredient "{ingredient_name}" deleted successfully!')
-        return redirect('core:ingredient_list')
+        return redirect('ingredient_list')
     
     context = {
         'ingredient': ingredient
@@ -728,63 +729,63 @@ def shopping_list_detail_view(request, list_id):
         # Validate that at least one item was purchased
         if not purchased_payload:
             messages.error(request, "Please select at least one item to confirm as purchased.")
-            return redirect('shopping_list_detail', list_id=shopping_list.id)
+            # STAY ON THE SAME PAGE instead of redirecting
+            # This allows the user to see the error and select items
+            pass  # Continue to render the template with error message
+        else:
+            try:
+                # Step 1: confirm purchases via service within transaction
+                with transaction.atomic():
+                    result = confirm_shopping_list(
+                        request.user,
+                        shopping_list.id,
+                        purchased_payload,
+                        total_actual_cost=float(total_actual_cost)
+                    )
 
-        try:
-            # Step 1: confirm purchases via service within transaction
-            with transaction.atomic():
-                result = confirm_shopping_list(
-                    request.user,
-                    shopping_list.id,
-                    purchased_payload,
-                    total_actual_cost=float(total_actual_cost)
-                )
-
-                if result:
-                    # Step 2: Update budget spending
-                    today = timezone.now().date()
-                    active_budget = Budget.objects.filter(
-                        user=request.user,
-                        active=True,
-                        start_date__lte=today,
-                        end_date__gte=today
-                    ).first()
-                    
-                    if active_budget:
-                        # Use the sync_amount_spent method to ensure data consistency
-                        new_total_spent = active_budget.sync_amount_spent()
+                    if result:
+                        # Step 2: Update budget spending
+                        today = timezone.now().date()
+                        active_budget = Budget.objects.filter(
+                            user=request.user,
+                            active=True,
+                            start_date__lte=today,
+                            end_date__gte=today
+                        ).first()
                         
-                        messages.success(request, 
-                            f'Shopping list confirmed successfully! ${total_actual_cost} spent. '
-                            f'Budget updated: ${new_total_spent} spent of ${active_budget.amount}. '
-                            f'Remaining budget: ${active_budget.get_remaining_budget()}'
-                        )
+                        if active_budget:
+                            # Use the sync_amount_spent method to ensure data consistency
+                            new_total_spent = active_budget.sync_amount_spent()
+                            
+                            messages.success(request, 
+                                f'Shopping list confirmed successfully! ${total_actual_cost} spent. '
+                                f'Budget updated: ${new_total_spent} spent of ${active_budget.amount}. '
+                                f'Remaining budget: ${active_budget.get_remaining_budget()}'
+                            )
+                        else:
+                            messages.success(request, 
+                                f'Shopping list confirmed successfully! ${total_actual_cost} spent. '
+                                'No active budget found for tracking.'
+                            )
+                        
+                        # Step 3: Detect food waste after confirmation
+                        try:
+                            waste_detected = detect_and_record_food_waste(request.user)
+                            if waste_detected:
+                                messages.info(request, "Food waste analysis completed. Check your analytics for details.")
+                        except Exception as waste_error:
+                            messages.warning(request, f"Purchases confirmed, but food waste analysis encountered an issue: {str(waste_error)}")
+                        
+                        # Step 4: Redirect to food waste analytics only if successful
+                        return redirect('food_waste_analytics')
+                    
                     else:
-                        messages.success(request, 
-                            f'Shopping list confirmed successfully! ${total_actual_cost} spent. '
-                            'No active budget found for tracking.'
-                        )
-                    
-                    # Step 3: Detect food waste after confirmation
-                    try:
-                        waste_detected = detect_and_record_food_waste(request.user)
-                        if waste_detected:
-                            messages.info(request, "Food waste analysis completed. Check your analytics for details.")
-                    except Exception as waste_error:
-                        messages.warning(request, f"Purchases confirmed, but food waste analysis encountered an issue: {str(waste_error)}")
-                    
-                    # Step 4: Redirect to food waste analytics
-                    return redirect('food_waste_analytics')
-                
-                else:
-                    messages.error(request, "Failed to confirm purchases. Please try again.")
-                    return redirect('shopping_list_detail', list_id=shopping_list.id)
-                    
-        except Exception as e:
-            messages.error(request, f"Error confirming purchases: {str(e)}")
-            return redirect('shopping_list_detail', list_id=shopping_list.id)
+                        messages.error(request, "Failed to confirm purchases. Please try again.")
+                        
+            except Exception as e:
+                messages.error(request, f"Error confirming purchases: {str(e)}")
 
-    # GET request — show list detail with enhanced context
+    # GET request OR failed POST — show list detail with enhanced context
     today = timezone.now().date()
     active_budget = Budget.objects.filter(
         user=request.user,
