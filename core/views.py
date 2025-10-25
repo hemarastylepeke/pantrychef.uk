@@ -110,9 +110,9 @@ def delete_pantry_item_view(request, item_id):
 @login_required(login_url='account_login')
 def ingredient_list_view(request):
     """
-    List all ingredients
+    List all ingredients that belongs to a user
     """
-    ingredients = Ingredient.objects.all().order_by('name')
+    ingredients = Ingredient.objects.filter(user=request.user).order_by('name')
 
     context = {
         'ingredients': ingredients,

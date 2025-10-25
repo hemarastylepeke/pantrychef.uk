@@ -15,7 +15,7 @@ from core.models import (
 )
 
 
-# Embedded Food Waste Detection Logic
+# Food Waste Detection Logic
 def detect_and_record_food_waste(user):
     """
     Detect food waste from UserPantry and create FoodWasteRecord entries.
@@ -71,7 +71,6 @@ def detect_and_record_food_waste(user):
 
 
 # AI Shopping List Generation Logic
-
 def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
     try:
         profile = UserProfile.objects.filter(user=user).first()
