@@ -26,6 +26,7 @@ class Ingredient(models.Model):
         ('other', 'Other'),
     ]
     
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     barcode = models.CharField(max_length=100, blank=True, null=True, unique=True)
