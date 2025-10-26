@@ -73,65 +73,128 @@ def detect_and_record_food_waste(user):
 # AI Shopping List Generation Logic
 def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
     try:
-        print(f"=== AI SHOPPING LIST GENERATION STARTED ===")
-        
         profile = UserProfile.objects.filter(user=user).first()
         budget = Budget.objects.filter(user=user, active=True).order_by('-start_date').first()
         if not budget:
             raise ValueError("No active budget found for user.")
 
-        pantry = UserPantry.objects.filter(user=user, quantity__gt=0).select_related("ingredient")
+        # Get current pantry with detailed information
+        pantry = UserPantry.objects.filter(user=user, quantity__gt=0, status='active').select_related("ingredient")
         expiring_soon = [
             p for p in pantry if p.expiry_date and p.expiry_date <= timezone.now().date() + timedelta(days=3)
         ]
 
+        # Get user's recipes
         recipes = Recipe.objects.filter(created_by=user, is_ai_generated=True).order_by('-created_at')[:3]
-        pantry_names = [p.ingredient.name.lower() for p in pantry]
-
-        recipe_ingredients = []
-        for r in recipes:
-            for ri in RecipeIngredient.objects.filter(recipe=r).select_related("ingredient"):
-                recipe_ingredients.append({
-                    "name": ri.ingredient.name,
-                    "quantity": float(ri.quantity),
-                    "unit": ri.unit
-                })
-
-        missing_from_pantry = [ri for ri in recipe_ingredients if ri["name"].lower() not in pantry_names]
+        
+        # COMPREHENSIVE MISSING ITEMS ANALYSIS
+        truly_missing_ingredients = []
+        pantry_usage_suggestions = []
+        
+        for recipe in recipes:
+            print(f"Recipe: {recipe.name}")
+            
+            for ri in RecipeIngredient.objects.filter(recipe=recipe).select_related("ingredient"):
+                recipe_ingredient_name = ri.ingredient.name.lower()
+                recipe_quantity_needed = ri.quantity
+                recipe_unit = ri.unit
+                
+                print(f"Needs: {recipe_ingredient_name} - {recipe_quantity_needed} {recipe_unit}")
+                
+                # Check pantry for this ingredient
+                pantry_items = [p for p in pantry if p.ingredient.name.lower() == recipe_ingredient_name]
+                
+                if not pantry_items:
+                    # Item not in pantry at all
+                    truly_missing_ingredients.append({
+                        "name": ri.ingredient.name,
+                        "quantity": float(ri.quantity),
+                        "unit": ri.unit,
+                        "reason": f"Missing for recipe: {recipe.name}",
+                        "recipe": recipe.name,
+                        "priority": "high"
+                    })
+                    
+                else:
+                    # Item exists in pantry - check quantity and quality
+                    total_available = sum(p.quantity for p in pantry_items)
+                    
+                    if total_available >= recipe_quantity_needed:
+                        # Sufficient quantity available
+                        pantry_usage_suggestions.append({
+                            "ingredient": ri.ingredient.name,
+                            "use_quantity": float(recipe_quantity_needed),
+                            "available_quantity": float(total_available),
+                            "unit": ri.unit,
+                            "reason": f"Use from pantry for {recipe.name}",
+                            "recipe": recipe.name
+                        })
+                        
+                    else:
+                        # Insufficient quantity - calculate how much to buy
+                        quantity_to_buy = recipe_quantity_needed - total_available
+                        truly_missing_ingredients.append({
+                            "name": ri.ingredient.name,
+                            "quantity": float(quantity_to_buy),
+                            "unit": ri.unit,
+                            "reason": f"Insufficient for {recipe.name} (have {total_available}, need {recipe_quantity_needed})",
+                            "recipe": recipe.name,
+                            "priority": "high"
+                        })
+                        print(f"INSUFFICIENT: have {total_available}, need {recipe_quantity_needed} - buy {quantity_to_buy}")
+        
+        # Get expiring items that should be used
+        expiring_items_to_use = []
+        for item in expiring_soon:
+            expiring_items_to_use.append({
+                "name": item.ingredient.name,
+                "quantity": float(item.quantity),
+                "unit": item.unit,
+                "expiry_date": str(item.expiry_date),
+                "reason": "Use soon to avoid waste"
+            })
 
         allergies = [a.strip().lower() for a in (profile.allergies or "").split(",") if a.strip()]
         goal = UserGoal.objects.filter(user_profile__user=user, active=True).first()
         goal_text = goal.goal_type.replace("_", " ") if goal else "healthy eating"
 
+        # Prepare data for AI
         pantry_json = json.dumps([
-            {"name": p.ingredient.name, "quantity": float(p.quantity), "unit": p.unit}
-            for p in pantry
+            {
+                "name": p.ingredient.name, 
+                "quantity": float(p.quantity), 
+                "unit": p.unit,
+                "expiry_date": str(p.expiry_date) if p.expiry_date else None
+            } for p in pantry
         ])
-        expiring_json = json.dumps([
-            {"name": p.ingredient.name, "quantity": float(p.quantity), "unit": p.unit, "expiry_date": str(p.expiry_date)}
-            for p in expiring_soon
-        ])
-        missing_json = json.dumps(missing_from_pantry)
+        
+        expiring_json = json.dumps(expiring_items_to_use)
+        missing_json = json.dumps(truly_missing_ingredients)
         allergies_json = json.dumps(allergies)
 
+        # AI prompt
         prompt = (
             f"You are an AI grocery planner optimizing budget and minimizing food waste.\n\n"
-            f"User context:\n"
-            f"- Budget: {budget.amount} {budget.currency}\n"
-            f"- Allergies (avoid): {allergies_json}\n"
-            f"- Active goal: {goal_text}\n"
-            f"- Pantry: {pantry_json}\n"
-            f"- Expiring soon: {expiring_json}\n"
-            f"- Missing ingredients for planned recipes: {missing_json}\n\n"
-            f"Task:\n"
-            f"1. Generate a shopping list that covers missing ingredients first.\n"
-            f"2. Add staples if budget allows.\n"
-            f"3. Stay below budget limit.\n"
-            f"4. Avoid allergens and duplicates.\n"
-            f"5. Prioritize ingredients helping to use expiring pantry items.\n"
-            f"6. Include estimated cost for each item and total cost.\n\n"
-            f"Respond ONLY with valid JSON in this exact format:\n"
-            f'{{"list_name": "Shopping List Name", "total_estimated_cost": 50.00, "items": [{{"ingredient": "Item Name", "quantity": 2, "unit": "kg", "estimated_price": 5.00, "priority": "high", "reason": "For recipes"}}]}}'
+            f"USER CONTEXT:\n"
+            f"- Budget: {budget.amount} {budget.currency} (DO NOT EXCEED THIS)\n"
+            f"- Allergies to AVOID: {allergies_json}\n"
+            f"- Health/Fitness Goal: {goal_text}\n\n"
+            f"CURRENT PANTRY INVENTORY (DO NOT SUGGEST THESE ITEMS):\n"
+            f"{pantry_json}\n\n"
+            f"ITEMS EXPIRING SOON (prioritize using these):\n"
+            f"{expiring_json}\n\n"
+            f"TRULY MISSING INGREDIENTS (MUST INCLUDE THESE FIRST):\n"
+            f"{missing_json}\n\n"
+            f"CRITICAL SHOPPING RULES:\n"
+            f"1. MUST include ALL items from 'Truly Missing Ingredients' list\n"
+            f"2. NEVER suggest items already in 'Current Pantry Inventory'\n" 
+            f"3. Suggest complementary ingredients that help use 'Items Expiring Soon'\n"
+            f"4. Only add additional staples if budget allows AFTER covering missing ingredients\n"
+            f"5. Stay strictly below budget limit of {budget.amount} {budget.currency}\n"
+            f"6. Avoid all allergens: {allergies_json}\n"
+            f"7. Align with user's goal: {goal_text}\n\n"
+            f"RESPONSE FORMAT (JSON only):\n"
+            f'{{"list_name": "Shopping List Name", "total_estimated_cost": 50.00, "items": [{{"ingredient": "Item Name", "quantity": 2, "unit": "kg", "estimated_price": 5.00, "priority": "high", "reason": "Missing for recipe X"}}]}}'
         )
 
         response = openai.chat.completions.create(
@@ -142,12 +205,14 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
 
         ai_text = response.choices[0].message.content.strip()
         
+        # print(f"=== AI RESPONSE ===")
+        # print(ai_text)
+        
         # Parse JSON response
         ai_json = {}
         try:
             ai_json = json.loads(ai_text)
         except json.JSONDecodeError:
-            # Try to extract JSON from text if direct parsing fails
             match = re.search(r'\{.*\}', ai_text, re.DOTALL)
             if match:
                 ai_json = json.loads(match.group())
@@ -171,10 +236,21 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
                 year=timezone.now().year,
             )
 
-            # Create shopping list items
+            # Create shopping list items with validation
+            items_created = 0
             for item in ai_json.get("items", []):
                 name = item.get("ingredient")
                 if not name:
+                    continue
+                
+                # Double-check this isn't in pantry
+                pantry_item_exists = any(
+                    p.ingredient.name.lower() == name.lower() 
+                    for p in pantry
+                )
+                
+                if pantry_item_exists:
+                    # print(f"FILTERED OUT: {name} - AI tried to suggest pantry item")
                     continue
                     
                 # Find or create ingredient
@@ -198,8 +274,9 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
                     notes=item.get("reason", ""),
                     purchased=False,
                 )
+                items_created += 1
+                print(f"Added: {name}")
 
-        print(f"AI shopping list generated successfully: {sl.id} with {ai_json.get('items', [])} items")
         return sl
 
     except Exception as e:

@@ -16,6 +16,7 @@ from decimal import Decimal
 from django.db import transaction
 
 
+
 #-------------------------------------------------------PANTRY MANAGEMENT VIEWS------------------------------------------------------------------#
 # Pantry list item
 @login_required(login_url='account_login')
@@ -111,9 +112,6 @@ def delete_pantry_item_view(request, item_id):
 def ingredient_list_view(request):
     """
     List all ingredients that belongs to a user
-    TO DO: 
-        Figure out if ingredients should be unique to every user
-        if we let every user add their own ingredients then the db will be populated with redundant
     """
     ingredients = Ingredient.objects.order_by('name')
 
@@ -406,8 +404,10 @@ def budget_analytics_view(request):
     
     # Calculate monthly spending trends
     monthly_spending = []
+    now = timezone.now().date()  # Use date instead of datetime
+
     for i in range(6):  # Last 6 months
-        month_start = timezone.now().replace(day=1) - timedelta(days=30*i)
+        month_start = (now.replace(day=1) - timedelta(days=30*i))
         month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
         
         monthly_budget = sum(
@@ -431,6 +431,7 @@ def budget_analytics_view(request):
         'total_spent': sum(budget.amount_spent for budget in budgets),
     }
     return render(request, 'core/budget_analytics.html', context)
+
 
 #-----------------------------------------------------SHOPPING LIST VIEWS-------------------------------------------------------------------------#
 # Shopping List List View
@@ -617,22 +618,10 @@ def shopping_list_detail_view(request, list_id):
     shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
     items_qs = shopping_list.items.select_related('ingredient').order_by('-priority', 'ingredient__name')
 
-     # DEBUG: Add this to see what's happening
-    print(f"=== SHOPPING LIST DEBUG ===")
-    print(f"Shopping List: {shopping_list.name} (ID: {shopping_list.id})")
-    print(f"Status: {shopping_list.status}")
-    print(f"Total Items in DB: {items_qs.count()}")
-
     # Group by priority for display
     high_priority_items = items_qs.filter(priority='high')
     medium_priority_items = items_qs.filter(priority='medium')
     low_priority_items = items_qs.filter(priority='low')
-
-    print(f"High priority: {high_priority_items.count()}")
-    print(f"Medium priority: {medium_priority_items.count()}")
-    print(f"Low priority: {low_priority_items.count()}")
-    print("=== END DEBUG ===")
-
 
     total_items = items_qs.count()
     purchased_items = items_qs.filter(purchased=True).count()
@@ -696,7 +685,7 @@ def shopping_list_detail_view(request, list_id):
                     )
 
                     if result:
-                        # Step 2: Update budget spending
+                        # Update budget spending
                         today = timezone.now().date()
                         active_budget = Budget.objects.filter(
                             user=request.user,
@@ -728,8 +717,8 @@ def shopping_list_detail_view(request, list_id):
                         except Exception as waste_error:
                             messages.warning(request, f"Purchases confirmed, but food waste analysis encountered an issue: {str(waste_error)}")
                         
-                        # Step 4: Redirect to food waste analytics only if successful
-                        return redirect('food_waste_analytics')
+                        # Redirect to shopping list only if successful
+                        return redirect('shopping_lists')
                     
                     else:
                         messages.error(request, "Failed to confirm purchases. Please try again.")
@@ -737,7 +726,7 @@ def shopping_list_detail_view(request, list_id):
             except Exception as e:
                 messages.error(request, f"Error confirming purchases: {str(e)}")
 
-    # GET request OR failed POST — show list detail with enhanced context
+    # show list detail with enhanced context
     today = timezone.now().date()
     active_budget = Budget.objects.filter(
         user=request.user,
@@ -756,7 +745,7 @@ def shopping_list_detail_view(request, list_id):
             'daily_budget': active_budget.get_remaining_budget() / max((active_budget.end_date - today).days, 1) if active_budget.end_date else Decimal('0.00')
         }
 
-    # Get items that need expiry dates (helpful for user)
+    # Get items that need expiry dates
     items_needing_expiry = items_qs.filter(
         ingredient__typical_expiry_days__isnull=False
     ).exclude(ingredient__typical_expiry_days=0)
