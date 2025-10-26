@@ -675,7 +675,7 @@ def shopping_list_detail_view(request, list_id):
             pass  # Continue to render the template with error message
         else:
             try:
-                # Step 1: confirm purchases via service within transaction
+                # confirm purchases via service within transaction
                 with transaction.atomic():
                     result = confirm_shopping_list(
                         request.user,
@@ -709,7 +709,7 @@ def shopping_list_detail_view(request, list_id):
                                 'No active budget found for tracking.'
                             )
                         
-                        # Step 3: Detect food waste after confirmation
+                        # Detect food waste after confirmation
                         try:
                             waste_detected = detect_and_record_food_waste(request.user)
                             if waste_detected:
@@ -718,7 +718,7 @@ def shopping_list_detail_view(request, list_id):
                             messages.warning(request, f"Purchases confirmed, but food waste analysis encountered an issue: {str(waste_error)}")
                         
                         # Redirect to shopping list only if successful
-                        return redirect('shopping_lists')
+                        return redirect('shopping_list_list')
                     
                     else:
                         messages.error(request, "Failed to confirm purchases. Please try again.")

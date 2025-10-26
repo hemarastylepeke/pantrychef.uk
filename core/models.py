@@ -300,6 +300,7 @@ class ShoppingListItem(models.Model):
     class Meta:
         ordering = ['priority', 'ingredient__name']
 
+    
 
 class FoodWasteRecord(models.Model):
     WASTE_REASONS = [
@@ -334,20 +335,6 @@ class FoodWasteRecord(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.ingredient.name} waste"
-
-
-# class ConsumptionRecord(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     pantry_item = models.ForeignKey(UserPantry, on_delete=models.CASCADE)
-#     recipe = models.ForeignKey(Recipe, on_delete=models.SET_NULL, null=True, blank=True)
-#     quantity_used = models.FloatField()
-#     date_consumed = models.DateField(auto_now_add=True)
-#     notes = models.TextField(blank=True)
-    
-#     created_at = models.DateTimeField(auto_now_add=True)
-
-#     class Meta:
-#         ordering = ['-date_consumed']
 
 
 class ImageProcessingJob(models.Model):
