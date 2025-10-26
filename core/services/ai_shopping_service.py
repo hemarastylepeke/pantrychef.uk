@@ -73,6 +73,8 @@ def detect_and_record_food_waste(user):
 # AI Shopping List Generation Logic
 def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
     try:
+        print(f"=== AI SHOPPING LIST GENERATION STARTED ===")
+        
         profile = UserProfile.objects.filter(user=user).first()
         budget = Budget.objects.filter(user=user, active=True).order_by('-start_date').first()
         if not budget:
@@ -128,7 +130,8 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
             f"4. Avoid allergens and duplicates.\n"
             f"5. Prioritize ingredients helping to use expiring pantry items.\n"
             f"6. Include estimated cost for each item and total cost.\n\n"
-            f"Respond ONLY with valid JSON."
+            f"Respond ONLY with valid JSON in this exact format:\n"
+            f'{{"list_name": "Shopping List Name", "total_estimated_cost": 50.00, "items": [{{"ingredient": "Item Name", "quantity": 2, "unit": "kg", "estimated_price": 5.00, "priority": "high", "reason": "For recipes"}}]}}'
         )
 
         response = openai.chat.completions.create(
@@ -138,10 +141,21 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
         )
 
         ai_text = response.choices[0].message.content.strip()
-        match = re.search(r'\{.*\}', ai_text, re.DOTALL)
-        ai_json = json.loads(match.group()) if match else {}
+        
+        # Parse JSON response
+        ai_json = {}
+        try:
+            ai_json = json.loads(ai_text)
+        except json.JSONDecodeError:
+            # Try to extract JSON from text if direct parsing fails
+            match = re.search(r'\{.*\}', ai_text, re.DOTALL)
+            if match:
+                ai_json = json.loads(match.group())
+            else:
+                raise ValueError("No valid JSON found in AI response")
 
         with transaction.atomic():
+            # Create the shopping list
             sl = ShoppingList.objects.create(
                 user=user,
                 name=ai_json.get("list_name", "AI Smart Shopping List"),
@@ -157,10 +171,13 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
                 year=timezone.now().year,
             )
 
+            # Create shopping list items
             for item in ai_json.get("items", []):
                 name = item.get("ingredient")
                 if not name:
                     continue
+                    
+                # Find or create ingredient
                 ing = Ingredient.objects.filter(name__iexact=name.strip()).first()
                 if not ing:
                     ing = Ingredient.objects.create(
@@ -170,6 +187,7 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
                         calories=0.0, protein=0.0, carbs=0.0, fat=0.0, fiber=0.0
                     )
 
+                # Create shopping list item
                 ShoppingListItem.objects.create(
                     shopping_list=sl,
                     ingredient=ing,
@@ -181,12 +199,12 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
                     purchased=False,
                 )
 
+        print(f"AI shopping list generated successfully: {sl.id} with {ai_json.get('items', [])} items")
         return sl
 
     except Exception as e:
         print(f"Error generating AI shopping list: {e}")
         return None
-
 
 # Confirm Shopping List (includes waste detection)
 def confirm_shopping_list(user, shopping_list_id, purchased_items_payload, total_actual_cost=None):
@@ -197,33 +215,18 @@ def confirm_shopping_list(user, shopping_list_id, purchased_items_payload, total
 
         with transaction.atomic():
             total_spent = Decimal("0.00")
+            
+            # Process only the purchased items from the payload
             for p in purchased_items_payload:
                 sli = None
                 if p.get("shopping_list_item_id"):
-                    sli = ShoppingListItem.objects.filter(id=p["shopping_list_item_id"], shopping_list=sl).first()
+                    sli = ShoppingListItem.objects.filter(
+                        id=p["shopping_list_item_id"], 
+                        shopping_list=sl
+                    ).first()
 
-                if not sli and p.get("ingredient_name"):
-                    ing = Ingredient.objects.filter(name__iexact=p["ingredient_name"].strip()).first()
-                    sli = ShoppingListItem.objects.filter(shopping_list=sl, ingredient=ing).first() if ing else None
-
-                if not sli:
-                    ing_name = p.get("ingredient_name") or "unknown"
-                    ing = Ingredient.objects.filter(name__iexact=ing_name.strip()).first()
-                    if not ing:
-                        ing = Ingredient.objects.create(name=ing_name.strip(), category="other", calories=0.0,
-                                                        protein=0.0, carbs=0.0, fat=0.0, fiber=0.0)
-                    sli = ShoppingListItem.objects.create(
-                        shopping_list=sl,
-                        ingredient=ing,
-                        quantity=p.get("purchased_quantity", p.get("quantity", 0) or 0),
-                        unit=p.get("unit", "g"),
-                        estimated_price=Decimal(str(p.get("estimated_price", 0))) if p.get("estimated_price") else Decimal("0.00"),
-                        priority=p.get("priority", "medium"),
-                        notes=p.get("notes", ""),
-                        purchased=True,
-                        actual_price=Decimal(str(p.get("actual_price", 0) or 0)),
-                    )
-                else:
+                if sli:
+                    # Mark as purchased and update with actual data
                     sli.purchased = True
                     if p.get("actual_price") is not None:
                         sli.actual_price = Decimal(str(p["actual_price"]))
@@ -231,36 +234,57 @@ def confirm_shopping_list(user, shopping_list_id, purchased_items_payload, total
                         sli.quantity = p["purchased_quantity"]
                     sli.save()
 
-                actual_price = sli.actual_price if sli.actual_price is not None else sli.estimated_price
-                total_spent += actual_price or Decimal("0.00")
-                purchase_qty = sli.quantity or 0
+                    # Use actual price if provided, otherwise use estimated
+                    actual_price = sli.actual_price if sli.actual_price is not None else sli.estimated_price
+                    total_spent += actual_price or Decimal("0.00")
+                    purchase_qty = sli.quantity or 0
 
-                expiry_date = None
-                if p.get("expiry_date"):
-                    try:
-                        expiry_date = timezone.datetime.strptime(p["expiry_date"], "%Y-%m-%d").date()
-                    except Exception:
-                        expiry_date = None
+                    # Parse expiry date
+                    expiry_date = None
+                    if p.get("expiry_date"):
+                        try:
+                            expiry_date = timezone.datetime.strptime(p["expiry_date"], "%Y-%m-%d").date()
+                        except Exception:
+                            expiry_date = None
 
-                UserPantry.objects.create(
-                    user=user,
-                    ingredient=sli.ingredient,
-                    custom_name=sli.ingredient.name,
-                    quantity=purchase_qty,
-                    unit=sli.unit,
-                    purchase_date=timezone.now().date(),
-                    expiry_date=expiry_date if expiry_date else None,
-                    price=actual_price or None,
-                    status='active',
-                )
+                    # Add to pantry only if purchased
+                    UserPantry.objects.create(
+                        user=user,
+                        ingredient=sli.ingredient,
+                        custom_name=sli.ingredient.name,
+                        quantity=purchase_qty,
+                        unit=sli.unit,
+                        purchase_date=timezone.now().date(),
+                        expiry_date=expiry_date if expiry_date else None,
+                        price=actual_price or None,
+                        status='active',
+                    )
 
+            # Update shopping list status and actual cost
             sl.status = "confirmed"
             sl.total_actual_cost = Decimal(str(total_actual_cost)) if total_actual_cost else total_spent
             sl.completed_at = timezone.now()
             sl.save()
 
+            # Update budget with the actual spent amount
+            today = timezone.now().date()
+            active_budget = Budget.objects.filter(
+                user=user,
+                active=True,
+                start_date__lte=today,
+                end_date__gte=today
+            ).first()
+            
+            if active_budget:
+                # Add the spent amount to the budget
+                active_budget.amount_spent += total_spent
+                active_budget.save()
+                print(f"Updated budget: {active_budget.amount_spent} spent of {active_budget.amount}")
+
         return sl
 
     except Exception as e:
         print(f"Error confirming shopping list: {e}")
+        import traceback
+        traceback.print_exc()
         return None

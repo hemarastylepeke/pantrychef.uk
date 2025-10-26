@@ -21,7 +21,7 @@ from django.db import transaction
 @login_required(login_url='account_login')
 def pantry_list_view(request):
     """
-    list of all pantry items
+    list of all pantry
     """
     pantry_items = UserPantry.objects.filter(user=request.user).order_by('expiry_date')
     
@@ -111,8 +111,11 @@ def delete_pantry_item_view(request, item_id):
 def ingredient_list_view(request):
     """
     List all ingredients that belongs to a user
+    TO DO: 
+        Figure out if ingredients should be unique to every user
+        if we let every user add their own ingredients then the db will be populated with redundant
     """
-    ingredients = Ingredient.objects.filter(user=request.user).order_by('name')
+    ingredients = Ingredient.objects.order_by('name')
 
     context = {
         'ingredients': ingredients,
@@ -390,9 +393,10 @@ def toggle_budget_active_view(request, budget_id):
         status = "activated" if budget.active else "deactivated"
         messages.success(request, f'Budget {status} successfully!')
     
-    return redirect('core:budget_list')
+    return redirect('budget_list')
 
 # Budget Analytics View
+# Should be able to track the amount of money spent everytime a user confirms a shopping list
 @login_required(login_url='account_login')
 def budget_analytics_view(request):
     """
@@ -613,10 +617,22 @@ def shopping_list_detail_view(request, list_id):
     shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
     items_qs = shopping_list.items.select_related('ingredient').order_by('-priority', 'ingredient__name')
 
+     # DEBUG: Add this to see what's happening
+    print(f"=== SHOPPING LIST DEBUG ===")
+    print(f"Shopping List: {shopping_list.name} (ID: {shopping_list.id})")
+    print(f"Status: {shopping_list.status}")
+    print(f"Total Items in DB: {items_qs.count()}")
+
     # Group by priority for display
     high_priority_items = items_qs.filter(priority='high')
     medium_priority_items = items_qs.filter(priority='medium')
     low_priority_items = items_qs.filter(priority='low')
+
+    print(f"High priority: {high_priority_items.count()}")
+    print(f"Medium priority: {medium_priority_items.count()}")
+    print(f"Low priority: {low_priority_items.count()}")
+    print("=== END DEBUG ===")
+
 
     total_items = items_qs.count()
     purchased_items = items_qs.filter(purchased=True).count()
