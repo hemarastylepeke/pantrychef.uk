@@ -478,7 +478,7 @@ def create_shopping_list_view(request):
         budget = Budget.objects.filter(user=request.user, active=True).order_by('-start_date').first()
         if not budget:
             messages.error(request, "Please set an active budget before generating a shopping list.")
-            return redirect('budget_setup')
+            return redirect('create_budget')
 
         messages.info(request, "Generating AI-powered shopping list... Please wait a moment.")
 
@@ -507,7 +507,7 @@ def create_shopping_list_view(request):
     active_budget = Budget.objects.filter(user=request.user, active=True).order_by('-start_date').first()
     if not active_budget:
         messages.warning(request, "You need to set an active budget before creating an AI shopping list.")
-        return redirect('budget_setup')
+        return redirect('create_budget')
 
     context = {
         "title": "AI Smart Shopping List",
@@ -599,7 +599,7 @@ def delete_shopping_list_view(request, list_id):
         list_name = shopping_list.name
         shopping_list.delete()
         messages.success(request, f'Shopping list "{list_name}" deleted successfully!')
-        return redirect('core:shopping_list_list')
+        return redirect('shopping_list_list')
     
     context = {
         'shopping_list': shopping_list
@@ -925,7 +925,7 @@ def delete_recipe_view(request, recipe_id):
         recipe_name = recipe.name
         recipe.delete()
         messages.success(request, f'Recipe "{recipe_name}" deleted successfully!')
-        return redirect('core:recipe_list')
+        return redirect('recipe_list')
     
     context = {
         'recipe': recipe
