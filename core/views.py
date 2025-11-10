@@ -15,6 +15,12 @@ from core.services.ai_shopping_service import generate_ai_shopping_list, confirm
 from decimal import Decimal
 from django.db import transaction
 
+def home_page_view(request):
+    # If user is already authenticated, redirect to dashboard
+    if request.user.is_authenticated:
+        return redirect('pantry_dashboard')
+    
+    return render(request, 'core/home.html')
 
 @login_required(login_url='account_login')
 def pantry_dashboard_view(request):
