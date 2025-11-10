@@ -3,7 +3,7 @@ from . import views
 
 urlpatterns = [
     # Pantry management
-    # path('pantry/', views.pantry_dashboard_view, name='pantry_dashboard'),
+    path('pantry/', views.pantry_dashboard_view, name='pantry_dashboard'),
 
     # Pantry item operations
     path('pantry/list/', views.pantry_list_view, name='pantry_list'),

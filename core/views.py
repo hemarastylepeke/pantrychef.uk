@@ -16,6 +16,226 @@ from decimal import Decimal
 from django.db import transaction
 
 
+@login_required(login_url='account_login')
+def pantry_dashboard_view(request):
+    """
+    Main dashboard view showing pantry overview, expiring items, and analytics
+    """
+    user = request.user
+    
+    # Get active pantry items
+    pantry_items = UserPantry.objects.filter(
+        user=user, 
+        status='active'
+    ).select_related('ingredient')
+    
+    # Calculate expiring soon items (within 3 days)
+    today = timezone.now().date()
+    expiring_soon = []
+    
+    for item in pantry_items:
+        if item.expiry_date:
+            days_until_expiry = (item.expiry_date - today).days
+            item.days_until_expiry = days_until_expiry
+            if days_until_expiry <= 3:
+                expiring_soon.append(item)
+    
+    # Sort expiring soon by urgency
+    expiring_soon.sort(key=lambda x: x.days_until_expiry)
+    
+    # Get user's active budget
+    current_budget = Budget.objects.filter(
+        user=user, 
+        active=True
+    ).order_by('-start_date').first()
+    
+    # Calculate budget percentage
+    budget_percentage = 0
+    if current_budget and current_budget.amount > 0:
+        budget_percentage = (current_budget.amount_spent / current_budget.amount) * 100
+    
+    # Calculate waste savings
+    waste_savings = calculate_waste_savings(user)
+    
+    # Calculate waste reduction percentage (simplified - compare with previous month)
+    waste_reduction_percentage = calculate_waste_reduction_percentage(user)
+    
+    # Get recipes created by user
+    recipes_created = Recipe.objects.filter(created_by=user).count()
+    
+    # Calculate pantry utilization (items used vs total items)
+    pantry_utilization = calculate_pantry_utilization(user)
+    
+    # Get recent consumption from shopping lists
+    recent_consumption = get_recent_consumption(user)
+    
+    # Generate recipe suggestions based on pantry items
+    recipe_suggestions = get_recipe_suggestions(user, pantry_items)
+    
+    # Waste reduction tips
+    waste_tips = [
+        "Plan meals around items expiring soon",
+        "Use frozen vegetables to reduce spoilage",
+        "Store fruits and vegetables properly to extend freshness",
+        "Cook in batches and freeze leftovers",
+        "Use vegetable scraps for homemade broth"
+    ]
+    
+    # Calculate total items count
+    total_items = pantry_items.count()
+    
+    context = {
+        # Stats for cards
+        'total_items': total_items,
+        'waste_savings': waste_savings,
+        'waste_reduction_percentage': waste_reduction_percentage,
+        'recipes_created': recipes_created,
+        'pantry_utilization': pantry_utilization,
+        'current_budget': current_budget,
+        'budget_percentage': round(budget_percentage, 1),
+        
+        # Main content
+        'pantry_items': pantry_items,
+        'expiring_soon': expiring_soon,
+        'recent_consumption': recent_consumption,
+        'recipe_suggestions': recipe_suggestions,
+        'waste_tips': waste_tips,
+    }
+    
+    return render(request, 'core/pantry_dashboard.html', context)
+
+def calculate_waste_savings(user):
+    """
+    Calculate estimated waste savings based on food waste records
+    """
+    # Get waste records from last 30 days
+    thirty_days_ago = timezone.now().date() - timedelta(days=30)
+    
+    recent_waste = FoodWasteRecord.objects.filter(
+        user=user,
+        waste_date__gte=thirty_days_ago
+    )
+    
+    total_waste_cost = recent_waste.aggregate(total=Sum('cost'))['total'] or Decimal('0.00')
+    
+    # Calculate savings (simplified - assume 40% reduction from optimal management)
+    # In a real scenario, you'd compare against baseline or previous periods
+    if total_waste_cost > 0:
+        # Assume good management saves 40% of potential waste
+        savings = total_waste_cost * Decimal('0.4')
+    else:
+        # If no recent waste, show minimal savings for good behavior
+        savings = Decimal('25.00')
+    
+    return savings
+
+def calculate_waste_reduction_percentage(user):
+    """
+    Calculate waste reduction percentage compared to previous period
+    """
+    # Current period (last 30 days)
+    current_start = timezone.now().date() - timedelta(days=30)
+    current_waste = FoodWasteRecord.objects.filter(
+        user=user,
+        waste_date__gte=current_start
+    ).aggregate(total=Sum('cost'))['total'] or Decimal('0.00')
+    
+    # Previous period (30-60 days ago)
+    previous_start = timezone.now().date() - timedelta(days=60)
+    previous_end = timezone.now().date() - timedelta(days=31)
+    previous_waste = FoodWasteRecord.objects.filter(
+        user=user,
+        waste_date__gte=previous_start,
+        waste_date__lte=previous_end
+    ).aggregate(total=Sum('cost'))['total'] or Decimal('1.00')  # Avoid division by zero
+    
+    if previous_waste > 0:
+        reduction = ((previous_waste - current_waste) / previous_waste) * 100
+        return max(0, min(100, reduction))  # Clamp between 0-100
+    else:
+        return 25  # Default positive percentage if no previous data
+
+def calculate_pantry_utilization(user):
+    """
+    Calculate pantry utilization percentage based on items used vs total
+    """
+    # Total active items
+    total_items = UserPantry.objects.filter(user=user, status='active').count()
+    
+    # Items used in last 30 days (through shopping list confirmation)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    used_items = ShoppingList.objects.filter(
+        user=user,
+        status='confirmed',
+        completed_at__gte=thirty_days_ago
+    ).count()
+    
+    if total_items > 0:
+        utilization = (used_items / total_items) * 100
+        return round(min(utilization, 100), 1)  # Cap at 100%
+    else:
+        return 0
+
+def get_recent_consumption(user):
+    """
+    Get recent consumption activity from confirmed shopping lists
+    """
+    recent_lists = ShoppingList.objects.filter(
+        user=user,
+        status='confirmed'
+    ).order_by('-completed_at')[:5]
+    
+    consumption_data = []
+    for shopping_list in recent_lists:
+        items_count = shopping_list.items.filter(purchased=True).count()
+        if items_count > 0:
+            consumption_data.append({
+                'shopping_list': shopping_list,
+                'items_count': items_count,
+                'total_cost': shopping_list.total_actual_cost or shopping_list.total_estimated_cost,
+                'date': shopping_list.completed_at
+            })
+    
+    return consumption_data
+
+def get_recipe_suggestions(user, pantry_items):
+    """
+    Generate recipe suggestions based on available pantry items
+    """
+    suggestions = []
+    
+    # Get all recipes (limit to prevent performance issues)
+    all_recipes = Recipe.objects.all()[:10]
+    
+    for recipe in all_recipes:
+        # Get recipe ingredients through the proper relationship
+        recipe_ingredients = recipe.recipeingredient_set.all()
+        pantry_ingredient_names = [p.ingredient.name.lower() for p in pantry_items]
+        
+        matching_ingredients = []
+        for ri in recipe_ingredients:
+            if ri.ingredient.name.lower() in pantry_ingredient_names:
+                matching_ingredients.append(ri.ingredient.name)
+        
+        # Calculate match percentage
+        match_percentage = 0
+        if recipe_ingredients.count() > 0:
+            match_percentage = (len(matching_ingredients) / recipe_ingredients.count()) * 100
+        
+        # Only suggest recipes with at least 40% match
+        if match_percentage >= 40:
+            suggestions.append({
+                'name': recipe.name,
+                'matching_ingredients': matching_ingredients[:3],  # Show first 3 matches
+                'match_percentage': round(match_percentage),
+                'prep_time': recipe.prep_time or 30,
+                'calories': int(recipe.total_calories or 400),
+                'rating': round(recipe.average_rating, 1) if recipe.average_rating else 4.5,
+            })
+    
+    # Sort by match percentage (highest first) and return top 3
+    suggestions.sort(key=lambda x: x['match_percentage'], reverse=True)
+    return suggestions[:3]
 
 #-------------------------------------------------------PANTRY MANAGEMENT VIEWS------------------------------------------------------------------#
 # Pantry list item

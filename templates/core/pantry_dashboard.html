@@ -23,7 +23,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                    <a href="{% url 'recipe_list' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
                         <i class="fas fa-utensils mr-3"></i>
                         <span>Recipes</span>
                     </a>
@@ -35,13 +35,19 @@
                     </a>
                 </li>
                 <li>
-                    <a href="" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                    <a href="{% url 'add_ingredient' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-plus-circle mr-3"></i>
+                        <span>Add Ingredient</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'shopping_list_list' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
                         <i class="fas fa-list-alt mr-3"></i>
                         <span>Shopping Lists</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'pantry_analytics' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
+                    <a href="{% url 'food_waste_analytics' %}" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-100">
                         <i class="fas fa-chart-pie mr-3"></i>
                         <span>Nutrition & Analytics</span>
                     </a>
@@ -90,6 +96,10 @@
                         <input type="text" placeholder="Search recipes..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                     </div>
+                    <!-- ADD INGREDIENT BUTTON IN HEADER -->
+                    <a href="{% url 'add_ingredient' %}" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                        <i class="fas fa-plus-circle mr-2"></i>Add Ingredient
+                    </a>
                     <a href="{% url 'add_pantry_item' %}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
                         <i class="fas fa-plus mr-2"></i>Add Item
                     </a>
@@ -170,7 +180,7 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-semibold">Items Expiring Soon</h3>
-                            <a href="{% url 'pantry_dashboard' %}" class="text-primary text-sm font-medium">View All</a>
+                            <a href="{% url 'pantry_list' %}" class="text-primary text-sm font-medium">View All</a>
                         </div>
                         <div class="space-y-4">
                             {% for item in expiring_soon %}
@@ -190,8 +200,8 @@
                                     </p>
                                 </div>
                                 <div class="flex space-x-2">
-                                    <a href="{% url 'log_consumption' item.id %}" class="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-green-600">Use Now</a>
-                                    <a href="{% url 'record_waste' item.id %}" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">Log Waste</a>
+                                    <a href="" class="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-green-600">Use Now</a>
+                                    <a href="" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">Log Waste</a>
                                 </div>
                             </div>
                             {% empty %}
@@ -207,7 +217,7 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-semibold">Recent Activity</h3>
-                            <a href="{% url 'pantry_analytics' %}" class="text-primary text-sm font-medium">View All</a>
+                            <a href="{% url 'food_waste_analytics' %}" class="text-primary text-sm font-medium">View All</a>
                         </div>
                         <div class="space-y-4">
                             {% for record in recent_consumption %}
@@ -248,19 +258,19 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
                         <div class="grid grid-cols-2 gap-3">
-                            <a href="" class="bg-green-600 text-grey-600 p-3 rounded-lg flex flex-col items-center justify-center hover:bg-green-800 transition">
+                            <a href="" class="bg-green-600 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-green-700 transition">
                                 <i class="fas fa-camera text-xl mb-2"></i>
                                 <span class="text-sm">Scan Item</span>
                             </a>
-                            <a href="{% url 'pantry_analytics' %}" class="bg-purple-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-purple-600 transition">
-                                <i class="fas fa-plus text-xl mb-2"></i>
-                                <span class="text-sm">Analytics</span>
+                            <a href="{% url 'add_ingredient' %}" class="bg-blue-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-blue-600 transition">
+                                <i class="fas fa-plus-circle text-xl mb-2"></i>
+                                <span class="text-sm">Add Ingredient</span>
                             </a>
-                            <a href="{% url 'pantry_analytics' %}" class="bg-purple-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-purple-600 transition">
+                            <a href="{% url 'create_shopping_list' %}" class="bg-purple-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-purple-600 transition">
                                 <i class="fas fa-list text-xl mb-2"></i>
                                 <span class="text-sm">Shopping List</span>
                             </a>
-                            <a href="{% url 'pantry_analytics' %}" class="bg-purple-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-purple-600 transition">
+                            <a href="{% url 'food_waste_analytics' %}" class="bg-orange-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-orange-600 transition">
                                 <i class="fas fa-chart-bar text-xl mb-2"></i>
                                 <span class="text-sm">Analytics</span>
                             </a>
@@ -271,7 +281,7 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold">Recipe Suggestions</h3>
-                            <a href="" class="text-primary text-sm font-medium">View All</a>
+                            <a href="{% url 'recipe_list' %}" class="text-primary text-sm font-medium">View All</a>
                         </div>
                         <div class="space-y-4">
                             {% for recipe in recipe_suggestions %}
@@ -293,6 +303,7 @@
                             <div class="text-center py-4 text-gray-500">
                                 <i class="fas fa-utensils text-2xl mb-2 text-gray-300"></i>
                                 <p class="text-sm">Add more items to get recipe suggestions</p>
+                                <a href="{% url 'add_ingredient' %}" class="text-primary text-sm mt-2 inline-block">Add Ingredients</a>
                             </div>
                             {% endfor %}
                         </div>
