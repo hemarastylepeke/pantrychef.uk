@@ -9,7 +9,7 @@ class PantryItemForm(forms.ModelForm):
             'name', 'category', 'quantity', 'unit',
             'purchase_date', 'expiry_date', 'price',
             'calories', 'protein', 'carbs', 'fat', 'fiber',
-            'brand', 'barcode', 'storage_instructions',
+            'barcode', 'storage_instructions',
             'product_image', 'expiry_label_image', 'notes'
         ]
         widgets = {
@@ -68,10 +68,6 @@ class PantryItemForm(forms.ModelForm):
                 'step': '0.1',
                 'placeholder': 'Fiber per 100g'
             }),
-            'brand': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
-                'placeholder': 'Brand (optional)'
-            }),
             'barcode': forms.TextInput(attrs={
                 'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors',
                 'placeholder': 'Barcode (optional)'
@@ -100,7 +96,6 @@ class PantryItemForm(forms.ModelForm):
         self.fields['product_image'].required = False
         self.fields['expiry_label_image'].required = False
         self.fields['price'].required = False
-        self.fields['brand'].required = False
         self.fields['barcode'].required = False
         self.fields['storage_instructions'].required = False
         self.fields['calories'].required = False

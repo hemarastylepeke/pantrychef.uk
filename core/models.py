@@ -55,7 +55,6 @@ class UserPantry(models.Model):
     
     # Additional product information
     barcode = models.CharField(max_length=100, blank=True, null=True)
-    brand = models.CharField(max_length=200, blank=True)
     typical_expiry_days = models.IntegerField(null=True, blank=True)
     storage_instructions = models.TextField(blank=True)
     
