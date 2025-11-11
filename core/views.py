@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
 import json
-from .models import UserPantry, Ingredient, Recipe, Budget, ShoppingList, ShoppingListItem, FoodWasteRecord
+from .models import UserPantry, Recipe, Budget, ShoppingList, ShoppingListItem, FoodWasteRecord
 from django.db.models import Sum
 from .forms import PantryItemForm, IngredientForm, BudgetForm, ShoppingListForm, ShoppingListItemForm, RecipeForm
 from django.db.models import Q

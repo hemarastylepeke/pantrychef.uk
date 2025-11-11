@@ -1,11 +1,10 @@
 from django.contrib import admin
 from .models import (
-    UserPantry, Ingredient, Recipe, 
+    UserPantry, Recipe, 
     ShoppingList,FoodWasteRecord, ShoppingListItem, 
     ImageProcessingJob, RecipeIngredient
 ) 
 
-admin.site.register(Ingredient)
 admin.site.register(UserPantry)
 admin.site.register(Recipe)
 admin.site.register(ShoppingList)

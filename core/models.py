@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db.models import Sum
 from decimal import Decimal
 from django.db.models.functions import Lower
+from django.db.models import Sum
 
 User = settings.AUTH_USER_MODEL
 
@@ -35,7 +36,7 @@ class UserPantry(models.Model):
 
     # User and basic item information
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    item_name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='other')
     
     # Nutritional information (per 100g)
@@ -196,7 +197,7 @@ class Recipe(models.Model):
     cuisine = models.CharField(max_length=50, choices=CUISINE_CHOICES)
     servings = models.IntegerField()
 
-    # Link recipes directly to pantry items 
+    # Linking recipes directly to pantry items 
     ingredients = models.ManyToManyField('UserPantry', through='RecipeIngredient', related_name='recipes_used_in')
 
     instructions = models.TextField()
@@ -468,8 +469,7 @@ class Budget(models.Model):
     
     def get_spending_breakdown(self):
         """Get spending breakdown by category for analytics"""
-        from django.db.models import Sum
-        
+     
         shopping_items = ShoppingListItem.objects.filter(
             shopping_list__user=self.user,
             shopping_list__status='confirmed',
