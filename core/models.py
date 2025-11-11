@@ -7,8 +7,8 @@ from django.db.models.functions import Lower
 
 User = settings.AUTH_USER_MODEL
 
-# Records the types of foods details such as nuitritional info and general information about the food item
-class Ingredient(models.Model):
+# Model representing items in a user's pantry
+class UserPantry(models.Model):
     CATEGORY_CHOICES = [
         ('vegetables', 'Vegetables'),
         ('fruits', 'Fruits'),
@@ -26,74 +26,43 @@ class Ingredient(models.Model):
         ('other', 'Other'),
     ]
     
-    name = models.CharField(max_length=200)
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
-    barcode = models.CharField(max_length=100, blank=True, null=True, unique=True)
-    typical_expiry_days = models.IntegerField(null=True, blank=True)
-    storage_instructions = models.TextField(blank=True)
-    calories = models.FloatField(help_text="Calories per 100g")
-    protein = models.FloatField(help_text="Protein in grams per 100g")
-    carbs = models.FloatField(help_text="Carbohydrates in grams per 100g")
-    fat = models.FloatField(help_text="Fat in grams per 100g")
-    fiber = models.FloatField(default=0, help_text="Fiber in grams per 100g")
-    
-    common_units = models.CharField(max_length=50, default="g")
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['name']
-        indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['category']),
-            models.Index(fields=['barcode']),
-        ]
-
-    def __str__(self):
-        return self.name
-    
-    def get_nutritional_info(self):
-        return f"Calories: {self.calories}, Protein: {self.protein}g, Carbs: {self.carbs}g, Fat: {self.fat}g"
-    
-    def get_nutritional_contribution(self, quantity: float, unit: str = None):
-        """
-        Estimate nutritional contribution for this ingredient based on quantity.
-
-        Assumes that calories, protein, carbs, and fat values are per 100g/ml/piece.
-        Adjust proportionally according to the quantity.
-        """
-        # Default assumption: nutrient values are per 100g
-        factor = quantity / 100.0
-
-        return {
-            "calories": self.calories * factor,
-            "protein": self.protein * factor,
-            "carbs": self.carbs * factor,
-            "fat": self.fat * factor,
-        }
-
-# Records to a particular user's  items that they own i.e Tomatoe sauce
-class UserPantry(models.Model):
     STATUS_CHOICES = [
         ('active', 'Active'),
         ('consumed', 'Consumed'),
         ('wasted', 'Wasted'),
         ('expired', 'Expired'),
     ]
-    
+
+    # User and basic item information
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    custom_name = models.CharField(max_length=200, blank=True)
+    item_name = models.CharField(max_length=200)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='other')
+    
+    # Nutritional information (per 100g)
+    calories = models.FloatField(default=0, help_text="Calories per 100g")
+    protein = models.FloatField(default=0, help_text="Protein in grams per 100g")
+    carbs = models.FloatField(default=0, help_text="Carbohydrates in grams per 100g")
+    fat = models.FloatField(default=0, help_text="Fat in grams per 100g")
+    fiber = models.FloatField(default=0, help_text="Fiber in grams per 100g")
+    
+    # Inventory management
     quantity = models.FloatField()
-    unit = models.CharField(max_length=20)
-    purchase_date = models.DateField()
+    unit = models.CharField(max_length=20, default="g")
+    purchase_date = models.DateField(default=timezone.now)
     expiry_date = models.DateField()
     price = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     
+    # Additional product information
+    barcode = models.CharField(max_length=100, blank=True, null=True)
+    brand = models.CharField(max_length=200, blank=True)
+    typical_expiry_days = models.IntegerField(null=True, blank=True)
+    storage_instructions = models.TextField(blank=True)
+    
+    # Image fields
     product_image = models.ImageField(upload_to='pantry_images/', blank=True, null=True)
     expiry_label_image = models.ImageField(upload_to='expiry_labels/', blank=True, null=True)
     
+    # Detection fields
     detected_expiry_text = models.TextField(blank=True)
     detection_confidence = models.FloatField(null=True, blank=True)
     detection_source = models.CharField(
@@ -106,6 +75,7 @@ class UserPantry(models.Model):
         default='manual'
     )
     
+    # Status and metadata
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     notes = models.TextField(blank=True)
     
@@ -114,15 +84,86 @@ class UserPantry(models.Model):
 
     class Meta:
         verbose_name_plural = "User pantries"
-        ordering = ['expiry_date']
+        ordering = ['expiry_date', 'name']
         indexes = [
             models.Index(fields=['user', 'status']),
             models.Index(fields=['expiry_date']),
             models.Index(fields=['user', 'expiry_date']),
+            models.Index(fields=['user', 'category']),
+            models.Index(fields=['name']),
         ]
 
     def __str__(self):
-        return f"{self.user.email} - {self.ingredient.name}"
+        return f"{self.user.email} - {self.name} ({self.quantity}{self.unit})"
+    
+    def get_nutritional_info(self):
+        """Get formatted nutritional information"""
+        return f"Calories: {self.calories}, Protein: {self.protein}g, Carbs: {self.carbs}g, Fat: {self.fat}g"
+    
+    def get_nutritional_contribution(self, quantity: float = None):
+        """
+        Estimate nutritional contribution based on quantity.
+        If no quantity provided, uses the current pantry quantity.
+        """
+        if quantity is None:
+            quantity = self.quantity
+            
+        # Calculate factor based on 100g standard
+        factor = quantity / 100.0
+
+        return {
+            "calories": self.calories * factor,
+            "protein": self.protein * factor,
+            "carbs": self.carbs * factor,
+            "fat": self.fat * factor,
+            "fiber": self.fiber * factor,
+        }
+    
+    def is_expiring_soon(self, days=3):
+        """Check if item is expiring within the specified days"""
+        return self.expiry_date <= timezone.now().date() + timezone.timedelta(days=days)
+    
+    def days_until_expiry(self):
+        """Calculate days until expiry"""
+        return (self.expiry_date - timezone.now().date()).days
+    
+    def mark_as_consumed(self, consumed_quantity=None):
+        """Mark item as consumed (partially or fully)"""
+        if consumed_quantity is None:
+            consumed_quantity = self.quantity
+            
+        if consumed_quantity >= self.quantity:
+            self.status = 'consumed'
+            self.quantity = 0
+        else:
+            self.quantity -= consumed_quantity
+            
+        self.save()
+    
+    def mark_as_wasted(self, wasted_quantity=None, reason='other'):
+        """Mark item as wasted and create waste record"""
+        if wasted_quantity is None:
+            wasted_quantity = self.quantity
+            
+        # Create waste record
+        FoodWasteRecord.objects.create(
+            user=self.user,
+            pantry_item=self,
+            original_quantity=self.quantity,
+            quantity_wasted=wasted_quantity,
+            unit=self.unit,
+            cost=self.price or Decimal('0.00'),
+            reason=reason,
+            reason_details=f"Wasted from pantry: {self.name}"
+        )
+        
+        if wasted_quantity >= self.quantity:
+            self.status = 'wasted'
+            self.quantity = 0
+        else:
+            self.quantity -= wasted_quantity
+            
+        self.save()
 
 
 class Recipe(models.Model):
@@ -155,8 +196,8 @@ class Recipe(models.Model):
     cuisine = models.CharField(max_length=50, choices=CUISINE_CHOICES)
     servings = models.IntegerField()
 
-    # Link recipes to ingredients using a ManyToMany through RecipeIngredient
-    ingredients = models.ManyToManyField('Ingredient', through='RecipeIngredient', related_name='recipes')
+    # Link recipes directly to pantry items 
+    ingredients = models.ManyToManyField('UserPantry', through='RecipeIngredient', related_name='recipes_used_in')
 
     instructions = models.TextField()
 
@@ -188,19 +229,21 @@ class Recipe(models.Model):
     def __str__(self):
         return self.name
 
-    # Calculate nuitrional data to match user goals
     def calculate_nutrition(self):
         """
-        Dynamically calculates total nutrition from linked ingredients.
+        Dynamically calculates total nutrition from linked pantry items.
         """
         recipe_ingredients = self.recipeingredient_set.all()
         total_calories = total_protein = total_carbs = total_fat = 0
+        
         for ri in recipe_ingredients:
-            contrib = ri.get_nutritional_contribution()
+            # Get nutritional contribution from the pantry item
+            contrib = ri.pantry_item.get_nutritional_contribution(ri.quantity)
             total_calories += contrib['calories']
             total_protein += contrib['protein']
             total_carbs += contrib['carbs']
             total_fat += contrib['fat']
+            
         self.total_calories = total_calories
         self.total_protein = total_protein
         self.total_carbs = total_carbs
@@ -210,31 +253,23 @@ class Recipe(models.Model):
 
 class RecipeIngredient(models.Model):
     """
-    A bridge table linking recipes and ingredients. It stores the quantity, unit, and nutritional contribution of each ingredient used in a recipe.
-    This relationship allows accurate nutrition calculation, cost tracking, and AI-driven recipe generation based on available ingredients,
-    dietary preferences, and user budgets.
+    A bridge table linking recipes and pantry items.
     """
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    pantry_item = models.ForeignKey(UserPantry, on_delete=models.CASCADE)
     quantity = models.FloatField()
     unit = models.CharField(max_length=50, default="g")
     
     optional = models.BooleanField(default=False, help_text="Whether ingredient is optional")
 
     def __str__(self):
-        return f"{self.ingredient.name} ({self.quantity}{self.unit}) for {self.recipe.name}"
+        return f"{self.pantry_item.name} ({self.quantity}{self.unit}) for {self.recipe.name}"
 
     def get_nutritional_contribution(self):
         """
         Returns nutritional info scaled to the quantity used.
         """
-        scale = self.quantity / 100
-        return {
-            'calories': self.ingredient.calories * scale,
-            'protein': self.ingredient.protein * scale,
-            'carbs': self.ingredient.carbs * scale,
-            'fat': self.ingredient.fat * scale,
-        }
+        return self.pantry_item.get_nutritional_contribution(self.quantity)
 
 
 class ShoppingList(models.Model):
@@ -285,11 +320,16 @@ class ShoppingListItem(models.Model):
     ]
     
     shopping_list = models.ForeignKey(ShoppingList, on_delete=models.CASCADE, related_name='items')
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    
+    # Item information 
+    item_name = models.CharField(max_length=200)
+    category = models.CharField(max_length=50, choices=UserPantry.CATEGORY_CHOICES, default='other')
+    
     quantity = models.FloatField()
-    unit = models.CharField(max_length=20)
+    unit = models.CharField(max_length=20, default="g")
     estimated_price = models.DecimalField(max_digits=8, decimal_places=2)
     actual_price = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     purchased = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
@@ -298,9 +338,8 @@ class ShoppingListItem(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['priority', 'ingredient__name']
+        ordering = ['priority', 'item_name']
 
-    
 
 class FoodWasteRecord(models.Model):
     WASTE_REASONS = [
@@ -313,7 +352,7 @@ class FoodWasteRecord(models.Model):
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    pantry_item = models.ForeignKey(UserPantry, on_delete=models.CASCADE)
     original_quantity = models.FloatField()
     quantity_wasted = models.FloatField()
     unit = models.CharField(max_length=20)
@@ -334,7 +373,7 @@ class FoodWasteRecord(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.username} - {self.ingredient.name} waste"
+        return f"{self.user.username} - {self.pantry_item.name} waste"
 
 
 class ImageProcessingJob(models.Model):
@@ -437,12 +476,12 @@ class Budget(models.Model):
             shopping_list__completed_at__date__gte=self.start_date,
             shopping_list__completed_at__date__lte=self.end_date if self.end_date else timezone.now().date(),
             purchased=True
-        ).select_related('ingredient')
+        )
         
         category_breakdown = {}
         for item in shopping_items:
             actual_price = item.actual_price or item.estimated_price or Decimal('0.00')
-            category = item.ingredient.category
+            category = item.category
             
             if category not in category_breakdown:
                 category_breakdown[category] = {
@@ -454,7 +493,7 @@ class Budget(models.Model):
             category_breakdown[category]['amount'] += actual_price
             category_breakdown[category]['count'] += 1
             category_breakdown[category]['items'].append({
-                'name': item.ingredient.name,
+                'name': item.item_name,
                 'amount': actual_price,
                 'quantity': item.quantity
             })
