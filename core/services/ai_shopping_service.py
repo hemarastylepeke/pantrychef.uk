@@ -48,7 +48,7 @@ def detect_and_record_food_waste(user):
                 item.status = 'expired'
                 item.save()
 
-            # Over-purchased logic: check items in pantry for too long (> 21 days)
+            # check items in pantry for too long (> 21 days)
             elif item.purchase_date and (today - item.purchase_date).days > 21 and item.quantity > 0:
                 FoodWasteRecord.objects.create(
                     user=user,
@@ -87,7 +87,7 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
         # Get user's recipes
         recipes = Recipe.objects.filter(created_by=user, is_ai_generated=True).order_by('-created_at')[:3]
         
-        # COMPREHENSIVE MISSING ITEMS ANALYSIS
+        # Analyze pantry against recipes to find missing ingredients
         truly_missing_ingredients = []
         pantry_usage_suggestions = []
         

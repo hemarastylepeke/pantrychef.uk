@@ -128,10 +128,18 @@
             <input type="checkbox" name="purchased_{{ item.id }}" {% if item.purchased %}checked{% endif %}
                    class="w-5 h-5 text-red-600 border-red-300 rounded focus:ring-red-500">
             <div>
-              <h4 class="font-medium text-gray-800">{{ item.ingredient.name }}</h4>
+              <h4 class="font-medium text-gray-800">{{ item.item_name }}</h4>
               <p class="text-sm text-gray-600">{{ item.quantity }} {{ item.unit }}</p>
+              {% if item.category and item.category != 'other' %}
+              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full mt-1">
+                {{ item.get_category_display }}
+              </span>
+              {% endif %}
               {% if item.reason %}
               <p class="text-xs text-gray-500 mt-1">{{ item.reason }}</p>
+              {% endif %}
+              {% if item.notes %}
+              <p class="text-xs text-gray-400 mt-1">{{ item.notes }}</p>
               {% endif %}
             </div>
           </div>
@@ -149,19 +157,19 @@
             <div class="flex space-x-2 justify-end">
               <input type="number" step="0.01" min="0" name="actual_price_{{ item.id }}" 
                      placeholder="Actual $" value="{% if item.actual_price %}{{ item.actual_price|floatformat:2 }}{% endif %}"
-                     class="w-28 border rounded p-2 text-sm" />
+                     class="w-28 border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" />
               <input type="number" step="0.01" min="0" name="purchased_qty_{{ item.id }}" 
                      placeholder="Qty" value="{% if item.purchased %}{{ item.quantity|floatformat:2 }}{% endif %}"
-                     class="w-20 border rounded p-2 text-sm" />
+                     class="w-20 border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" />
             </div>
 
             <!-- Expiry Inputs -->
             <div class="flex space-x-2 justify-end">
               <input type="date" name="expiry_date_{{ item.id }}" 
-                     class="border rounded p-2 text-sm" 
+                     class="border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                      min="{{ today|date:'Y-m-d' }}" />
               <input type="file" name="expiry_image_{{ item.id }}" accept="image/*"
-                     class="text-sm block w-full md:w-auto" />
+                     class="text-sm block w-full md:w-auto border border-gray-300 rounded p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" />
             </div>
           </div>
         </div>
@@ -187,8 +195,16 @@
             <input type="checkbox" name="purchased_{{ item.id }}" {% if item.purchased %}checked{% endif %}
                    class="w-5 h-5 text-yellow-600 border-yellow-300 rounded focus:ring-yellow-500">
             <div>
-              <h4 class="font-medium text-gray-800">{{ item.ingredient.name }}</h4>
+              <h4 class="font-medium text-gray-800">{{ item.item_name }}</h4>
               <p class="text-sm text-gray-600">{{ item.quantity }} {{ item.unit }}</p>
+              {% if item.category and item.category != 'other' %}
+              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full mt-1">
+                {{ item.get_category_display }}
+              </span>
+              {% endif %}
+              {% if item.notes %}
+              <p class="text-xs text-gray-400 mt-1">{{ item.notes }}</p>
+              {% endif %}
             </div>
           </div>
 
@@ -197,14 +213,14 @@
             <div class="flex space-x-2 justify-end">
               <input type="number" step="0.01" min="0" name="actual_price_{{ item.id }}" 
                      placeholder="Actual $" value="{% if item.actual_price %}{{ item.actual_price|floatformat:2 }}{% endif %}"
-                     class="w-28 border rounded p-2 text-sm" />
+                     class="w-28 border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" />
             </div>
             <div class="flex space-x-2 justify-end">
               <input type="date" name="expiry_date_{{ item.id }}" 
-                     class="border rounded p-2 text-sm"
+                     class="border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
                      min="{{ today|date:'Y-m-d' }}" />
               <input type="file" name="expiry_image_{{ item.id }}" accept="image/*" 
-                     class="text-sm block w-full md:w-auto" />
+                     class="text-sm block w-full md:w-auto border border-gray-300 rounded p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" />
             </div>
           </div>
         </div>
@@ -230,8 +246,16 @@
             <input type="checkbox" name="purchased_{{ item.id }}" {% if item.purchased %}checked{% endif %}
                    class="w-5 h-5 text-green-600 border-green-300 rounded focus:ring-green-500">
             <div>
-              <h4 class="font-medium text-gray-800">{{ item.ingredient.name }}</h4>
+              <h4 class="font-medium text-gray-800">{{ item.item_name }}</h4>
               <p class="text-sm text-gray-600">{{ item.quantity }} {{ item.unit }}</p>
+              {% if item.category and item.category != 'other' %}
+              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full mt-1">
+                {{ item.get_category_display }}
+              </span>
+              {% endif %}
+              {% if item.notes %}
+              <p class="text-xs text-gray-400 mt-1">{{ item.notes }}</p>
+              {% endif %}
             </div>
           </div>
 
@@ -240,14 +264,14 @@
             <div class="flex space-x-2 justify-end">
               <input type="number" step="0.01" min="0" name="actual_price_{{ item.id }}" 
                      placeholder="Actual $" value="{% if item.actual_price %}{{ item.actual_price|floatformat:2 }}{% endif %}"
-                     class="w-28 border rounded p-2 text-sm" />
+                     class="w-28 border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" />
             </div>
             <div class="flex space-x-2 justify-end">
               <input type="date" name="expiry_date_{{ item.id }}" 
-                     class="border rounded p-2 text-sm"
+                     class="border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
                      min="{{ today|date:'Y-m-d' }}" />
               <input type="file" name="expiry_image_{{ item.id }}" accept="image/*" 
-                     class="text-sm block w-full md:w-auto" />
+                     class="text-sm block w-full md:w-auto border border-gray-300 rounded p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" />
             </div>
           </div>
         </div>
@@ -256,30 +280,30 @@
     </div>
     {% endif %}
 
-    <!-- ====== Expiry Guidance ====== -->
-    {% if items_needing_expiry %}
+    <!-- ====== Shopping Tips ====== -->
     <div class="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
       <div class="flex items-start space-x-3">
         <div class="flex-shrink-0">
-          <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-          </svg>
+          <i class="fas fa-lightbulb text-blue-600 mt-1"></i>
         </div>
         <div>
-          <h4 class="font-medium text-blue-800">Expiry Date Tip</h4>
-          <p class="text-sm text-blue-600 mt-1">
-            Some items in your list typically have expiry dates. Consider adding expiry dates for better food waste tracking.
-          </p>
+          <h4 class="font-medium text-blue-800">Shopping Tips</h4>
+          <ul class="text-sm text-blue-600 mt-1 space-y-1">
+            <li>• Add expiry dates for better food waste tracking</li>
+            <li>• Take photos of expiry labels for automatic detection</li>
+            <li>• Update actual prices for accurate budget tracking</li>
+            <li>• Adjust quantities if you purchased different amounts</li>
+          </ul>
         </div>
       </div>
     </div>
-    {% endif %}
 
     <!-- ====== Confirm Purchases Button ====== -->
     <div class="mt-8">
       <input type="hidden" name="action" value="confirm" />
       <button type="submit"
-              class="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium text-lg transition-colors duration-200">
+              class="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium text-lg transition-colors duration-200 flex items-center justify-center">
+        <i class="fas fa-check-circle mr-2"></i>
         Confirm Purchases & Update Budget
       </button>
       <p class="text-sm text-gray-500 text-center mt-2">
@@ -288,5 +312,58 @@
     </div>
   </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add focus styles to all form inputs
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.classList.add('ring-2', 'ring-green-500', 'border-green-500');
+        });
+        input.addEventListener('blur', function() {
+            this.classList.remove('ring-2', 'ring-green-500', 'border-green-500');
+        });
+    });
+
+    // Auto-calculate purchased percentage when checkboxes are clicked
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][name^="purchased_"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateProgress);
+    });
+
+    function updateProgress() {
+        const totalItems = checkboxes.length;
+        const purchasedItems = Array.from(checkboxes).filter(cb => cb.checked).length;
+        const percentage = totalItems > 0 ? (purchasedItems / totalItems) * 100 : 0;
+        
+        // Update progress bar
+        const progressBar = document.querySelector('.bg-green-500.h-3');
+        if (progressBar) {
+            progressBar.style.width = percentage + '%';
+        }
+        
+        // Update text
+        const progressText = document.querySelector('.text-gray-600');
+        if (progressText) {
+            progressText.textContent = purchasedItems + '/' + totalItems + ' items purchased';
+        }
+        
+        const percentageText = document.querySelector('.font-medium.text-green-600');
+        if (percentageText) {
+            percentageText.textContent = Math.round(percentage) + '%';
+        }
+    }
+
+    // Set minimum date for expiry dates to today
+    const today = new Date().toISOString().split('T')[0];
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+        if (!input.value) {
+            input.value = today;
+        }
+    });
+});
+</script>
 
 {% endblock %}
