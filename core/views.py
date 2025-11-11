@@ -7,7 +7,7 @@ from datetime import timedelta
 import json
 from .models import UserPantry, Recipe, Budget, ShoppingList, ShoppingListItem, FoodWasteRecord
 from django.db.models import Sum
-from .forms import PantryItemForm, IngredientForm, BudgetForm, ShoppingListForm, ShoppingListItemForm, RecipeForm
+from .forms import PantryItemForm, BudgetForm, ShoppingListForm, ShoppingListItemForm, RecipeForm
 from django.db.models import Q
 from django.forms import formset_factory
 from core.services.recipe_suggestion_ai import generate_ai_recipe_from_openai
@@ -33,7 +33,7 @@ def pantry_dashboard_view(request):
     pantry_items = UserPantry.objects.filter(
         user=user, 
         status='active'
-    ).select_related('ingredient')
+    ).order_by('expiry_date')
     
     # Calculate expiring soon items (within 3 days)
     today = timezone.now().date()
@@ -125,7 +125,6 @@ def calculate_waste_savings(user):
     total_waste_cost = recent_waste.aggregate(total=Sum('cost'))['total'] or Decimal('0.00')
     
     # Calculate savings (simplified - assume 40% reduction from optimal management)
-    # In a real scenario, you'd compare against baseline or previous periods
     if total_waste_cost > 0:
         # Assume good management saves 40% of potential waste
         savings = total_waste_cost * Decimal('0.4')
@@ -216,12 +215,12 @@ def get_recipe_suggestions(user, pantry_items):
     for recipe in all_recipes:
         # Get recipe ingredients through the proper relationship
         recipe_ingredients = recipe.recipeingredient_set.all()
-        pantry_ingredient_names = [p.ingredient.name.lower() for p in pantry_items]
+        pantry_item_names = [p.name.lower() for p in pantry_items]
         
         matching_ingredients = []
         for ri in recipe_ingredients:
-            if ri.ingredient.name.lower() in pantry_ingredient_names:
-                matching_ingredients.append(ri.ingredient.name)
+            if ri.pantry_item.name.lower() in pantry_item_names:
+                matching_ingredients.append(ri.pantry_item.name)
         
         # Calculate match percentage
         match_percentage = 0
@@ -244,11 +243,10 @@ def get_recipe_suggestions(user, pantry_items):
     return suggestions[:3]
 
 #-------------------------------------------------------PANTRY MANAGEMENT VIEWS------------------------------------------------------------------#
-# Pantry list item
 @login_required(login_url='account_login')
 def pantry_list_view(request):
     """
-    list of all pantry
+    List of all pantry items for the user
     """
     pantry_items = UserPantry.objects.filter(user=request.user).order_by('expiry_date')
     
@@ -257,8 +255,6 @@ def pantry_list_view(request):
     }
     return render(request, 'core/pantry_list.html', context)
 
-
-# Add pantry item view
 @login_required(login_url='account_login')
 def add_pantry_item_view(request):
     """
@@ -277,7 +273,7 @@ def add_pantry_item_view(request):
                 pantry_item.expiry_label_image = request.FILES['expiry_label_image']
             
             pantry_item.save()
-            messages.success(request, f'{pantry_item.ingredient.name} added to pantry!')
+            messages.success(request, f'{pantry_item.name} added to pantry!')
             return redirect('pantry_list')
         else:
             messages.error(request, 'Please correct the errors below.')
@@ -286,11 +282,9 @@ def add_pantry_item_view(request):
     
     context = {
         'form': form,
-        'ingredients': Ingredient.objects.all().order_by('name')
     }
     return render(request, 'core/add_pantry_item.html', context)
 
-# Edit pantry item view
 @login_required(login_url='account_login')
 def edit_pantry_item_view(request, item_id):
     """
@@ -302,7 +296,7 @@ def edit_pantry_item_view(request, item_id):
         form = PantryItemForm(request.POST, request.FILES, instance=pantry_item)
         if form.is_valid():
             form.save()
-            messages.success(request, f'{pantry_item.ingredient.name} updated successfully!')
+            messages.success(request, f'{pantry_item.name} updated successfully!')
             return redirect('pantry_list')
     else:
         form = PantryItemForm(instance=pantry_item)
@@ -313,7 +307,6 @@ def edit_pantry_item_view(request, item_id):
     }
     return render(request, 'core/edit_pantry_item.html', context)
 
-# Delete pantry item view
 @login_required(login_url='account_login')
 def delete_pantry_item_view(request, item_id):
     """
@@ -322,8 +315,9 @@ def delete_pantry_item_view(request, item_id):
     pantry_item = get_object_or_404(UserPantry, id=item_id, user=request.user)
     
     if request.method == 'POST':
+        item_name = pantry_item.name
         pantry_item.delete()
-        messages.success(request, f'{pantry_item.ingredient.name} deleted successfully!')
+        messages.success(request, f'{item_name} deleted successfully!')
         return redirect('pantry_list')
     
     context = {
@@ -331,108 +325,23 @@ def delete_pantry_item_view(request, item_id):
     }
     return render(request, 'core/delete_pantry_item.html', context)
 
-
-#----------------------------------------------------------INGREDIENT VIEWS----------------------------------------------------------------------------#
-# Ingredient List View
 @login_required(login_url='account_login')
-def ingredient_list_view(request):
+def pantry_item_detail_view(request, item_id):
     """
-    List all ingredients that belongs to a user
+    View pantry item details
     """
-    ingredients = Ingredient.objects.order_by('name')
-
-    context = {
-        'ingredients': ingredients,
-    }
-    return render(request, 'core/ingredient_list.html', context)
-
-# Add Ingredient View
-@login_required(login_url='account_login')
-def add_ingredient_view(request):
-    """
-    Add new ingredient to the database
-    """
-    if request.method == 'POST':
-        form = IngredientForm(request.POST)
-        if form.is_valid():
-            ingredient = form.save()
-            messages.success(request, f'Ingredient "{ingredient.name}" added successfully!')
-            return redirect('ingredient_list')
-        else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = IngredientForm()
+    pantry_item = get_object_or_404(UserPantry, id=item_id, user=request.user)
+    
+    # Calculate nutritional information for current quantity
+    nutritional_info = pantry_item.get_nutritional_contribution()
     
     context = {
-        'form': form,
-        'title': 'Add New Ingredient'
+        'pantry_item': pantry_item,
+        'nutritional_info': nutritional_info,
     }
-    return render(request, 'core/ingredient_form.html', context)
-
-# Edit Ingredient View
-@login_required(login_url='account_login')
-def edit_ingredient_view(request, ingredient_id):
-    """
-    Edit existing ingredient
-    """
-    ingredient = get_object_or_404(Ingredient, id=ingredient_id)
-    
-    if request.method == 'POST':
-        form = IngredientForm(request.POST, instance=ingredient)
-        if form.is_valid():
-            updated_ingredient = form.save()
-            messages.success(request, f'Ingredient "{updated_ingredient.name}" updated successfully!')
-            return redirect('ingredient_list')
-        else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = IngredientForm(instance=ingredient)
-    
-    context = {
-        'form': form,
-        'ingredient': ingredient,
-        'title': f'Edit {ingredient.name}'
-    }
-    return render(request, 'core/ingredient_form.html', context)
-
-# Delete Ingredient View
-@login_required(login_url='account_login')
-def delete_ingredient_view(request, ingredient_id):
-    """
-    Delete ingredient from database
-    """
-    ingredient = get_object_or_404(Ingredient, id=ingredient_id)
-    
-    if request.method == 'POST':
-        ingredient_name = ingredient.name
-        ingredient.delete()
-        messages.success(request, f'Ingredient "{ingredient_name}" deleted successfully!')
-        return redirect('ingredient_list')
-    
-    context = {
-        'ingredient': ingredient
-    }
-    return render(request, 'core/delete_ingredient.html', context)
-
-# Ingredient Detail View
-@login_required(login_url='account_login')
-def ingredient_detail_view(request, ingredient_id):
-    """
-    View ingredient details
-    """
-    ingredient = get_object_or_404(Ingredient, id=ingredient_id)
-    
-    # Get pantry items that use this ingredient
-    pantry_items = UserPantry.objects.filter(ingredient=ingredient)[:10]
-    
-    context = {
-        'ingredient': ingredient,
-        'pantry_items': pantry_items,
-    }
-    return render(request, 'core/ingredient_detail.html', context)
+    return render(request, 'core/pantry_item_detail.html', context)
 
 #-----------------------------------------------------BUDGET MANAGEMENT VIEWS-------------------------------------------------------------------------#
-# Budget List View
 @login_required(login_url='account_login')
 def budget_list_view(request):
     """
@@ -455,7 +364,6 @@ def budget_list_view(request):
     }
     return render(request, 'core/budget_list.html', context)
 
-# Budget Detail View
 @login_required(login_url='account_login')
 def budget_detail_view(request, budget_id):
     """
@@ -474,30 +382,6 @@ def budget_detail_view(request, budget_id):
     # Get spending breakdown by category
     spending_breakdown = budget.get_spending_breakdown()
     
-    # Weekly spending breakdown
-    weekly_spending = []
-    if budget.period == 'weekly':
-        current_date = budget.start_date
-        week_count = 1
-        while current_date <= (budget.end_date or timezone.now().date()):
-            week_end = min(current_date + timedelta(days=6), budget.end_date or timezone.now().date())
-            
-            week_spending = ShoppingList.objects.filter(
-                user=request.user,
-                status='confirmed',
-                completed_at__date__gte=current_date,
-                completed_at__date__lte=week_end
-            ).aggregate(total=Sum('total_actual_cost'))['total'] or Decimal('0.00')
-            
-            weekly_spending.append({
-                'week': f"Week {week_count}",
-                'period': f"{current_date.strftime('%b %d')} - {week_end.strftime('%b %d')}",
-                'amount': week_spending
-            })
-            
-            current_date = week_end + timedelta(days=1)
-            week_count += 1
-    
     context = {
         'budget': budget,
         'spending_percentage': min(spending_percentage, 100),
@@ -507,11 +391,9 @@ def budget_detail_view(request, budget_id):
         'total_from_shopping_lists': budget.get_total_spent_from_shopping_lists(),
         'spending_breakdown': spending_breakdown,
         'remaining_budget': budget.get_remaining_budget(),
-        'weekly_spending': weekly_spending,
     }
     return render(request, 'core/budget_detail.html', context)
 
-# Create Budget View
 @login_required(login_url='account_login')
 def create_budget_view(request):
     """
@@ -544,7 +426,6 @@ def create_budget_view(request):
     }
     return render(request, 'core/budget_form.html', context)
 
-# Edit Budget View
 @login_required(login_url='account_login')
 def edit_budget_view(request, budget_id):
     """
@@ -579,7 +460,6 @@ def edit_budget_view(request, budget_id):
     }
     return render(request, 'core/budget_form.html', context)
 
-# Delete Budget View
 @login_required(login_url='account_login')
 def delete_budget_view(request, budget_id):
     """
@@ -591,14 +471,13 @@ def delete_budget_view(request, budget_id):
         budget_name = f"{budget.amount} {budget.currency}/{budget.period}"
         budget.delete()
         messages.success(request, f'Budget "{budget_name}" deleted successfully!')
-        return redirect('core:budget_list')
+        return redirect('budget_list')
     
     context = {
         'budget': budget
     }
     return render(request, 'core/delete_budget.html', context)
 
-# Toggle Budget Active Status
 @login_required(login_url='account_login')
 def toggle_budget_active_view(request, budget_id):
     """
@@ -619,8 +498,6 @@ def toggle_budget_active_view(request, budget_id):
     
     return redirect('budget_list')
 
-# Budget Analytics View
-# Should be able to track the amount of money spent everytime a user confirms a shopping list
 @login_required(login_url='account_login')
 def budget_analytics_view(request):
     """
@@ -630,7 +507,7 @@ def budget_analytics_view(request):
     
     # Calculate monthly spending trends
     monthly_spending = []
-    now = timezone.now().date()  # Use date instead of datetime
+    now = timezone.now().date()
 
     for i in range(6):  # Last 6 months
         month_start = (now.replace(day=1) - timedelta(days=30*i))
@@ -658,9 +535,7 @@ def budget_analytics_view(request):
     }
     return render(request, 'core/budget_analytics.html', context)
 
-
 #-----------------------------------------------------SHOPPING LIST VIEWS-------------------------------------------------------------------------#
-# Shopping List List View
 @login_required(login_url='account_login')
 def shopping_list_list_view(request):
     """
@@ -695,7 +570,6 @@ def create_shopping_list_view(request):
     - Generates a draft list with estimated costs and missing ingredients.
     - Tracks estimated spending (later compared to actual confirmed spend).
     """
-
     if request.method == "POST":
         # user can optionally specify a target budget period
         period = request.POST.get("period") or "weekly"
@@ -729,7 +603,6 @@ def create_shopping_list_view(request):
             messages.error(request, "AI failed to generate a shopping list. Please try again later.")
             return redirect('shopping_list_list')
 
-    #
     active_budget = Budget.objects.filter(user=request.user, active=True).order_by('-start_date').first()
     if not active_budget:
         messages.warning(request, "You need to set an active budget before creating an AI shopping list.")
@@ -741,99 +614,6 @@ def create_shopping_list_view(request):
     }
     return render(request, "core/ai_shopping_list_setup.html", context)
 
-# Edit Shopping List View
-@login_required(login_url='account_login')
-def edit_shopping_list_view(request, list_id):
-    """
-    Edit existing shopping list and its items
-    """
-    shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
-    ShoppingListItemFormSet = formset_factory(ShoppingListItemForm, extra=1, can_delete=True)
-    
-    if request.method == 'POST':
-        form = ShoppingListForm(request.POST, instance=shopping_list)
-        formset = ShoppingListItemFormSet(request.POST, prefix='items')
-        
-        if form.is_valid() and formset.is_valid():
-            # Update shopping list
-            updated_list = form.save(commit=False)
-            
-            # Calculate new total estimated cost
-            total_estimated_cost = 0
-            items_to_save = []
-            
-            for item_form in formset:
-                if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE', False):
-                    item = item_form.save(commit=False)
-                    if hasattr(item, 'shopping_list'):
-                        item.shopping_list = updated_list
-                    else:
-                        item.shopping_list_id = updated_list.id
-                    if item.estimated_price:
-                        total_estimated_cost += item.estimated_price
-                    items_to_save.append(item)
-            
-            # Save everything
-            updated_list.total_estimated_cost = total_estimated_cost
-            updated_list.save()
-            
-            # Delete existing items and save new ones
-            shopping_list.items.all().delete()
-            for item in items_to_save:
-                item.save()
-            
-            messages.success(request, f'Shopping list "{updated_list.name}" updated successfully!')
-            return redirect('shopping_list_detail', list_id=updated_list.id)
-        else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = ShoppingListForm(instance=shopping_list)
-        
-        # Initialize formset with existing items
-        initial_data = []
-        for item in shopping_list.items.all():
-            initial_data.append({
-                'ingredient': item.ingredient,
-                'quantity': item.quantity,
-                'unit': item.unit,
-                'estimated_price': item.estimated_price,
-                'priority': item.priority,
-                'notes': item.notes,
-                'reason': item.reason,
-            })
-        
-        formset = ShoppingListItemFormSet(initial=initial_data, prefix='items')
-    
-    context = {
-        'form': form,
-        'formset': formset,
-        'shopping_list': shopping_list,
-        'title': f'Edit {shopping_list.name}'
-    }
-    return render(request, 'core/shopping_list_form.html', context)
-
-
-# Delete Shopping List View
-@login_required(login_url='account_login')
-def delete_shopping_list_view(request, list_id):
-    """
-    Delete shopping list
-    """
-    shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
-    
-    if request.method == 'POST':
-        list_name = shopping_list.name
-        shopping_list.delete()
-        messages.success(request, f'Shopping list "{list_name}" deleted successfully!')
-        return redirect('shopping_list_list')
-    
-    context = {
-        'shopping_list': shopping_list
-    }
-    return render(request, 'core/delete_shopping_list.html', context)
-
-
-# Shopping List Detail View
 @login_required(login_url='account_login')
 def shopping_list_detail_view(request, list_id):
     """
@@ -842,7 +622,7 @@ def shopping_list_detail_view(request, list_id):
     After confirmation, updates budget spending and triggers food waste detection.
     """
     shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
-    items_qs = shopping_list.items.select_related('ingredient').order_by('-priority', 'ingredient__name')
+    items_qs = shopping_list.items.all().order_by('-priority', 'item_name')
 
     # Group by priority for display
     high_priority_items = items_qs.filter(priority='high')
@@ -896,9 +676,6 @@ def shopping_list_detail_view(request, list_id):
         # Validate that at least one item was purchased
         if not purchased_payload:
             messages.error(request, "Please select at least one item to confirm as purchased.")
-            # STAY ON THE SAME PAGE instead of redirecting
-            # This allows the user to see the error and select items
-            pass  # Continue to render the template with error message
         else:
             try:
                 # confirm purchases via service within transaction
@@ -971,11 +748,6 @@ def shopping_list_detail_view(request, list_id):
             'daily_budget': active_budget.get_remaining_budget() / max((active_budget.end_date - today).days, 1) if active_budget.end_date else Decimal('0.00')
         }
 
-    # Get items that need expiry dates
-    items_needing_expiry = items_qs.filter(
-        ingredient__typical_expiry_days__isnull=False
-    ).exclude(ingredient__typical_expiry_days=0)
-
     context = {
         'shopping_list': shopping_list,
         'high_priority_items': high_priority_items,
@@ -988,13 +760,29 @@ def shopping_list_detail_view(request, list_id):
         'total_actual': total_actual,
         'active_budget': active_budget,
         'budget_info': budget_info,
-        'items_needing_expiry': items_needing_expiry,
         'today': today,
     }
     return render(request, 'core/shopping_list_detail.html', context)
 
+@login_required(login_url='account_login')
+def delete_shopping_list_view(request, list_id):
+    """
+    Delete shopping list
+    """
+    shopping_list = get_object_or_404(ShoppingList, id=list_id, user=request.user)
+    
+    if request.method == 'POST':
+        list_name = shopping_list.name
+        shopping_list.delete()
+        messages.success(request, f'Shopping list "{list_name}" deleted successfully!')
+        return redirect('shopping_list_list')
+    
+    context = {
+        'shopping_list': shopping_list
+    }
+    return render(request, 'core/delete_shopping_list.html', context)
+
 #--------------------------------------------------RECIPE MANAGEMENT VIEWS-------------------------------------------------------------------------#
-# Recipe List View
 @login_required(login_url='account_login')
 def recipe_list_view(request):
     """
@@ -1017,7 +805,6 @@ def recipe_list_view(request):
         recipes = recipes.filter(
             Q(name__icontains=search_query) |
             Q(description__icontains=search_query) |
-            Q(ingredients__icontains=search_query) |
             Q(dietary_tags__icontains=search_query)
         )
     
@@ -1044,10 +831,10 @@ def recipe_detail_view(request, recipe_id):
     """
     recipe = get_object_or_404(Recipe, id=recipe_id)
 
-    # Get ingredients properly (ManyToMany)
-    ingredients_list = recipe.ingredients.all()
+    # Get ingredients through the proper relationship
+    ingredients_list = recipe.recipeingredient_set.all().select_related('pantry_item')
 
-    # Parse instructions into steps (still fine since it's text)
+    # Parse instructions into steps
     instructions_list = []
     if recipe.instructions:
         instructions_list = [line.strip() for line in recipe.instructions.split('\n') if line.strip()]
@@ -1070,7 +857,6 @@ def recipe_detail_view(request, recipe_id):
 
     return render(request, 'core/recipe_detail.html', context)
 
-# Create Recipe View
 @login_required(login_url='account_login')
 def create_recipe_view(request):
     """
@@ -1096,8 +882,6 @@ def create_recipe_view(request):
     }
     return render(request, 'core/ai_generate_recipe.html', context)
 
-
-# Edit Recipe View
 @login_required(login_url='account_login')
 def edit_recipe_view(request, recipe_id):
     """
@@ -1134,7 +918,6 @@ def edit_recipe_view(request, recipe_id):
     }
     return render(request, 'core/recipe_form.html', context)
 
-# Delete Recipe View
 @login_required(login_url='account_login')
 def delete_recipe_view(request, recipe_id):
     """
@@ -1158,7 +941,6 @@ def delete_recipe_view(request, recipe_id):
     }
     return render(request, 'core/delete_recipe.html', context)
 
-# My Recipes View
 @login_required(login_url='account_login')
 def my_recipes_view(request):
     """
@@ -1172,7 +954,7 @@ def my_recipes_view(request):
     }
     return render(request, 'core/my_recipes.html', context)
 
-# Food Waste Analytics View
+@login_required(login_url='account_login')
 def food_waste_analytics_view(request):
     """
     Display user's food waste analytics after shopping list confirmation.
@@ -1197,5 +979,3 @@ def food_waste_analytics_view(request):
     }
 
     return render(request, "core/food_waste_analytics.html", context)
-
-   

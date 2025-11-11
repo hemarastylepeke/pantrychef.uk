@@ -10,7 +10,7 @@ from django.db.models import Sum, F
 
 from accounts.models import UserProfile, UserGoal
 from core.models import (
-    Ingredient, UserPantry, ShoppingList, ShoppingListItem, Budget,
+    UserPantry, ShoppingList, ShoppingListItem, Budget,
     Recipe, RecipeIngredient, FoodWasteRecord
 )
 
@@ -28,14 +28,14 @@ def detect_and_record_food_waste(user):
 
     for item in pantry_items:
         try:
-            if item.status == 'inactive':
+            if item.status != 'active':
                 continue
 
             # Expired and not used
             if item.expiry_date and item.expiry_date < today and item.quantity > 0:
                 FoodWasteRecord.objects.create(
                     user=user,
-                    ingredient=item.ingredient,
+                    pantry_item=item,
                     original_quantity=item.quantity,
                     quantity_wasted=item.quantity,
                     unit=item.unit,
@@ -45,14 +45,14 @@ def detect_and_record_food_waste(user):
                     purchase_date=item.purchase_date or today,
                     expiry_date=item.expiry_date or today,
                 )
-                item.status = 'inactive'
+                item.status = 'expired'
                 item.save()
 
             # Over-purchased logic: check items in pantry for too long (> 21 days)
             elif item.purchase_date and (today - item.purchase_date).days > 21 and item.quantity > 0:
                 FoodWasteRecord.objects.create(
                     user=user,
-                    ingredient=item.ingredient,
+                    pantry_item=item,
                     original_quantity=item.quantity,
                     quantity_wasted=item.quantity * 0.5,  # assume half wasted
                     unit=item.unit,
@@ -67,7 +67,7 @@ def detect_and_record_food_waste(user):
                 item.save()
 
         except Exception as e:
-            print(f"Error detecting food waste for {item.ingredient.name}: {e}")
+            print(f"Error detecting food waste for {item.name}: {e}")
 
 
 # AI Shopping List Generation Logic
@@ -79,7 +79,7 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
             raise ValueError("No active budget found for user.")
 
         # Get current pantry with detailed information
-        pantry = UserPantry.objects.filter(user=user, quantity__gt=0, status='active').select_related("ingredient")
+        pantry = UserPantry.objects.filter(user=user, quantity__gt=0, status='active')
         expiring_soon = [
             p for p in pantry if p.expiry_date and p.expiry_date <= timezone.now().date() + timedelta(days=3)
         ]
@@ -94,20 +94,20 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
         for recipe in recipes:
             print(f"Recipe: {recipe.name}")
             
-            for ri in RecipeIngredient.objects.filter(recipe=recipe).select_related("ingredient"):
-                recipe_ingredient_name = ri.ingredient.name.lower()
+            for ri in RecipeIngredient.objects.filter(recipe=recipe).select_related("pantry_item"):
+                recipe_ingredient_name = ri.pantry_item.name.lower()
                 recipe_quantity_needed = ri.quantity
                 recipe_unit = ri.unit
                 
                 print(f"Needs: {recipe_ingredient_name} - {recipe_quantity_needed} {recipe_unit}")
                 
                 # Check pantry for this ingredient
-                pantry_items = [p for p in pantry if p.ingredient.name.lower() == recipe_ingredient_name]
+                pantry_items = [p for p in pantry if p.name.lower() == recipe_ingredient_name]
                 
                 if not pantry_items:
                     # Item not in pantry at all
                     truly_missing_ingredients.append({
-                        "name": ri.ingredient.name,
+                        "name": ri.pantry_item.name,
                         "quantity": float(ri.quantity),
                         "unit": ri.unit,
                         "reason": f"Missing for recipe: {recipe.name}",
@@ -122,7 +122,7 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
                     if total_available >= recipe_quantity_needed:
                         # Sufficient quantity available
                         pantry_usage_suggestions.append({
-                            "ingredient": ri.ingredient.name,
+                            "ingredient": ri.pantry_item.name,
                             "use_quantity": float(recipe_quantity_needed),
                             "available_quantity": float(total_available),
                             "unit": ri.unit,
@@ -134,7 +134,7 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
                         # Insufficient quantity - calculate how much to buy
                         quantity_to_buy = recipe_quantity_needed - total_available
                         truly_missing_ingredients.append({
-                            "name": ri.ingredient.name,
+                            "name": ri.pantry_item.name,
                             "quantity": float(quantity_to_buy),
                             "unit": ri.unit,
                             "reason": f"Insufficient for {recipe.name} (have {total_available}, need {recipe_quantity_needed})",
@@ -147,7 +147,7 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
         expiring_items_to_use = []
         for item in expiring_soon:
             expiring_items_to_use.append({
-                "name": item.ingredient.name,
+                "name": item.name,
                 "quantity": float(item.quantity),
                 "unit": item.unit,
                 "expiry_date": str(item.expiry_date),
@@ -161,7 +161,7 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
         # Prepare data for AI
         pantry_json = json.dumps([
             {
-                "name": p.ingredient.name, 
+                "name": p.name, 
                 "quantity": float(p.quantity), 
                 "unit": p.unit,
                 "expiry_date": str(p.expiry_date) if p.expiry_date else None
@@ -194,7 +194,7 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
             f"6. Avoid all allergens: {allergies_json}\n"
             f"7. Align with user's goal: {goal_text}\n\n"
             f"RESPONSE FORMAT (JSON only):\n"
-            f'{{"list_name": "Shopping List Name", "total_estimated_cost": 50.00, "items": [{{"ingredient": "Item Name", "quantity": 2, "unit": "kg", "estimated_price": 5.00, "priority": "high", "reason": "Missing for recipe X"}}]}}'
+            f'{{"list_name": "Shopping List Name", "total_estimated_cost": 50.00, "items": [{{"item_name": "Item Name", "quantity": 2, "unit": "kg", "estimated_price": 5.00, "priority": "high", "reason": "Missing for recipe X"}}]}}'
         )
 
         response = openai.chat.completions.create(
@@ -204,9 +204,6 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
         )
 
         ai_text = response.choices[0].message.content.strip()
-        
-        # print(f"=== AI RESPONSE ===")
-        # print(ai_text)
         
         # Parse JSON response
         ai_json = {}
@@ -239,34 +236,24 @@ def generate_ai_shopping_list(user, model="gpt-4o-mini", temperature=0.5):
             # Create shopping list items with validation
             items_created = 0
             for item in ai_json.get("items", []):
-                name = item.get("ingredient")
+                name = item.get("item_name")
                 if not name:
                     continue
                 
                 # Double-check this isn't in pantry
                 pantry_item_exists = any(
-                    p.ingredient.name.lower() == name.lower() 
+                    p.name.lower() == name.lower() 
                     for p in pantry
                 )
                 
                 if pantry_item_exists:
-                    # print(f"FILTERED OUT: {name} - AI tried to suggest pantry item")
                     continue
                     
-                # Find or create ingredient
-                ing = Ingredient.objects.filter(name__iexact=name.strip()).first()
-                if not ing:
-                    ing = Ingredient.objects.create(
-                        name=name.strip(),
-                        category="other",
-                        common_units=item.get("unit", "g"),
-                        calories=0.0, protein=0.0, carbs=0.0, fat=0.0, fiber=0.0
-                    )
-
                 # Create shopping list item
                 ShoppingListItem.objects.create(
                     shopping_list=sl,
-                    ingredient=ing,
+                    item_name=name,
+                    category='other',  # Default category, can be improved
                     quantity=item.get("quantity", 0),
                     unit=item.get("unit", "g"),
                     estimated_price=Decimal(str(item.get("estimated_price", 0))),
@@ -327,14 +314,15 @@ def confirm_shopping_list(user, shopping_list_id, purchased_items_payload, total
                     # Add to pantry only if purchased
                     UserPantry.objects.create(
                         user=user,
-                        ingredient=sli.ingredient,
-                        custom_name=sli.ingredient.name,
+                        name=sli.item_name,
+                        category=sli.category,
                         quantity=purchase_qty,
                         unit=sli.unit,
                         purchase_date=timezone.now().date(),
                         expiry_date=expiry_date if expiry_date else None,
                         price=actual_price or None,
                         status='active',
+                        detection_source='manual'
                     )
 
             # Update shopping list status and actual cost
