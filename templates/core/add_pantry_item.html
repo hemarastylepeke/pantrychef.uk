@@ -15,7 +15,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
+<div class="max-w-4xl mx-auto">
     <!-- Messages -->
     {% if messages %}
     <div class="mb-8 space-y-3">
@@ -47,33 +47,38 @@
                     <h2 class="text-lg font-semibold text-gray-900">Basic Information</h2>
                 </div>
                 
-                <!-- Ingredient Field -->
+                <!-- Name Field -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Ingredient <span class="text-red-500">*</span>
+                        Item Name <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
-                        {{ form.ingredient }}
+                        {{ form.name }}
                         <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                             <i class="fas fa-carrot text-gray-400"></i>
                         </div>
                     </div>
-                    {% if form.ingredient.errors %}
+                    {% if form.name.errors %}
                     <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
-                        {{ form.ingredient.errors }}
+                        {{ form.name.errors }}
                     </div>
                     {% endif %}
                 </div>
 
-                <!-- Custom Name Field -->
+                <!-- Category Field -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Custom Name (optional)
+                        Category <span class="text-red-500">*</span>
                     </label>
-                    {{ form.custom_name }}
-                    {% if form.custom_name.errors %}
+                    <div class="relative">
+                        {{ form.category }}
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-tag text-gray-400"></i>
+                        </div>
+                    </div>
+                    {% if form.category.errors %}
                     <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
-                        {{ form.custom_name.errors }}
+                        {{ form.category.errors }}
                     </div>
                     {% endif %}
                 </div>
@@ -151,27 +156,130 @@
                 </div>
             </div>
 
-            <!-- Additional Information Section -->
+            <!-- Nutritional Information Section -->
             <div class="space-y-6 p-4 border border-gray-100 rounded-lg bg-gray-50">
                 <div class="flex items-center">
                     <div class="w-1.5 h-6 bg-purple-500 rounded-full mr-3"></div>
+                    <h2 class="text-lg font-semibold text-gray-900">Nutritional Information (per 100g)</h2>
+                </div>
+                <p class="text-sm text-gray-600 mb-4">Optional - fill in nutritional values for better recipe calculations</p>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Calories
+                        </label>
+                        {{ form.calories }}
+                        {% if form.calories.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
+                            {{ form.calories.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Protein (g)
+                        </label>
+                        {{ form.protein }}
+                        {% if form.protein.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
+                            {{ form.protein.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Carbs (g)
+                        </label>
+                        {{ form.carbs }}
+                        {% if form.carbs.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
+                            {{ form.carbs.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Fat (g)
+                        </label>
+                        {{ form.fat }}
+                        {% if form.fat.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
+                            {{ form.fat.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Fiber (g)
+                        </label>
+                        {{ form.fiber }}
+                        {% if form.fiber.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
+                            {{ form.fiber.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information Section -->
+            <div class="space-y-6 p-4 border border-gray-100 rounded-lg bg-gray-50">
+                <div class="flex items-center">
+                    <div class="w-1.5 h-6 bg-amber-500 rounded-full mr-3"></div>
                     <h2 class="text-lg font-semibold text-gray-900">Additional Information</h2>
                 </div>
                 
                 <!-- Price Field -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Price (optional)
+                        </label>
+                        <div class="relative">
+                            {{ form.price }}
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <span class="text-gray-500">$</span>
+                            </div>
+                        </div>
+                        {% if form.price.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
+                            {{ form.price.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Barcode (optional)
+                        </label>
+                        <div class="relative">
+                            {{ form.barcode }}
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-barcode text-gray-400"></i>
+                            </div>
+                        </div>
+                        {% if form.barcode.errors %}
+                        <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
+                            {{ form.barcode.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Storage Instructions -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Price (optional)
+                        Storage Instructions (optional)
                     </label>
-                    <div class="relative">
-                        {{ form.price }}
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <span class="text-gray-500">$</span>
-                        </div>
-                    </div>
-                    {% if form.price.errors %}
+                    {{ form.storage_instructions }}
+                    {% if form.storage_instructions.errors %}
                     <div class="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-200">
-                        {{ form.price.errors }}
+                        {{ form.storage_instructions.errors }}
                     </div>
                     {% endif %}
                 </div>
@@ -237,7 +345,7 @@
                     <i class="fas fa-plus mr-2"></i>
                     Add to Pantry
                 </button>
-                <a href="" class="flex-1 bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors text-center flex items-center justify-center border border-gray-300 shadow-sm">
+                <a href="{% url 'pantry_dashboard' %}" class="flex-1 bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors text-center flex items-center justify-center border border-gray-300 shadow-sm">
                     <i class="fas fa-times mr-2"></i>
                     Cancel
                 </a>
@@ -254,7 +362,8 @@
                 <ul class="text-sm text-blue-800 mt-2 space-y-1">
                     <li>• Take photos of expiry labels for automatic date detection</li>
                     <li>• Use consistent units (grams, milliliters, pieces) for better tracking</li>
-                    <li>• Regular price tracking helps with budget management</li>
+                    <li>• Fill in nutritional information for accurate recipe calculations</li>
+                    <li>• Add storage instructions to help maintain food freshness</li>
                 </ul>
             </div>
         </div>
@@ -318,6 +427,11 @@ input:focus, select:focus, textarea:focus {
 .error:focus {
     border-color: #ef4444;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Nutritional info input styling */
+input[type="number"] {
+    text-align: center;
 }
 </style>
 
@@ -393,6 +507,12 @@ document.addEventListener('DOMContentLoaded', function() {
             field.classList.add('error');
         }
     });
+
+    // Auto-focus on name field
+    const nameField = document.querySelector('input[name="name"]');
+    if (nameField) {
+        nameField.focus();
+    }
 });
 </script>
 {% endblock %}
