@@ -1,13 +1,13 @@
-{% extends 'core/base_login.html' %}
-{% load i18n %}
+{% extends 'core/base.html' %}
 {% load static %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-5xl w-full bg-white shadow-lg rounded-xl p-8">
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
     <div class="mb-8 text-center">
-      <h2 class="text-3xl font-bold text-gray-900">Create Your Profile</h2>
-      <p class="text-lg text-gray-600 mt-2">Fill in your details to personalize your experience</p>
+      <h1 class="text-3xl font-bold text-gray-900">Edit Your Profile</h1>
+      <p class="text-lg text-gray-600 mt-2">Update your personal information, preferences, and goals</p>
     </div>
 
     {% if messages %}
@@ -23,111 +23,125 @@
     <!-- Tabs Navigation -->
     <div class="mb-8 border-b border-gray-200">
       <nav class="-mb-px flex space-x-8 overflow-x-auto">
-        <button id="personal-tab" class="tab-button py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-green-500 text-green-600" data-tab="personal">Personal Information</button>
-        <button id="dietary-tab" class="tab-button py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="dietary">Dietary Requirements</button>
-        <button id="preferences-tab" class="tab-button py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="preferences">Taste Preferences</button>
-        <button id="goals-tab" class="tab-button py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="goals">User Goals</button>
+        <button class="tab-button py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-green-500 text-green-600" data-tab="profile">Personal Information</button>
+        <button class="tab-button py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="dietary">Dietary Requirements</button>
+        <button class="tab-button py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="preferences">Taste Preferences</button>
+        <button class="tab-button py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="goals">User Goals</button>
       </nav>
     </div>
 
-    <form method="post" enctype="multipart/form-data" class="space-y-8">
-      {% csrf_token %}
-
-      {% if form.non_field_errors %}
-        <div class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg">
-          {{ form.non_field_errors }}
-        </div>
-      {% endif %}
-
-      <!-- Personal Information Tab -->
-      <div id="personal-tab-content" class="tab-content active">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <!-- Profile image section -->
+    <!-- Profile Tab -->
+    <div id="profile-tab-content" class="tab-content active">
+      <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="profile">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div class="col-span-1 flex flex-col items-center">
-            <div class="w-48 h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden flex items-center justify-center border-2 border-dashed border-gray-300 shadow-inner">
-              <img id="profile-preview" src="{% if form.initial.profile_image %}{{ form.initial.profile_image.url }}{% else %}{% static 'profile_images/default_profile_image.png' %}{% endif %}" alt="Profile preview" class="object-cover w-full h-full">
+            <div class="w-40 h-40 bg-gray-100 rounded-xl overflow-hidden border border-gray-300 flex items-center justify-center shadow-inner mb-4">
+              <img id="profile-preview" src="{% if profile.profile_image %}{{ profile.profile_image.url }}{% else %}{% static 'profile_images/default_profile_image.png' %}{% endif %}" class="object-cover w-full h-full">
             </div>
-
-            <label class="mt-6 w-full">
-              <span class="block text-sm font-semibold text-gray-700 mb-2 text-center">Profile Image</span>
-              <div class="mt-1">{{ form.profile_image }}</div>
-              {% if form.profile_image.errors %}
-                <p class="text-sm text-red-600 mt-2 font-medium text-center">{{ form.profile_image.errors|first }}</p>
-              {% endif %}
+            <label class="w-full">
+              <span class="block text-sm font-semibold text-gray-700 text-center mb-2">Profile Image</span>
+              {{ profile_form.profile_image }}
             </label>
-            <p class="text-xs text-gray-500 mt-3 text-center">Recommended: square image, max 2MB</p>
           </div>
 
-          <!-- Personal Information Fields -->
-          <div class="col-span-2">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {% for field in form %}
-                {% if field.name in 'first_name,last_name,subscription_plan,height,weight,age,gender,activity_level' %}
-                  <div class="space-y-2">
-                    <label class="block text-sm font-semibold text-gray-700">
-                      {{ field.label }}
-                      {% if field.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
-                    </label>
-                    <div class="mt-1">{{ field }}</div>
-                    {% if field.help_text %}
-                      <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
-                    {% endif %}
-                    {% if field.errors %}
-                      <p class="text-sm text-red-600 mt-1 font-medium">{{ field.errors|first }}</p>
-                    {% endif %}
-                  </div>
-                {% endif %}
-              {% endfor %}
-            </div>
+          <div class="col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for field in profile_form %}
+              {% if field.name != 'profile_image' %}
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.errors %}
+                    <p class="text-sm text-red-600 mt-1">{{ field.errors|first }}</p>
+                  {% endif %}
+                </div>
+              {% endif %}
+            {% endfor %}
           </div>
         </div>
-      </div>
 
-      <!-- Dietary Requirements Tab -->
-      <div id="dietary-tab-content" class="tab-content hidden">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-4">Dietary Information</h3>
-          {% for field in form %}
-            {% if field.name in 'allergies,dietary_restrictions,disliked_ingredients' %}
-              <div class="space-y-2">
-                <label class="block text-sm font-semibold text-gray-700">{{ field.label }}</label>
-                <div class="mt-1">{{ field }}</div>
-                {% if field.errors %}
-                  <p class="text-sm text-red-600 mt-1">{{ field.errors|first }}</p>
-                {% endif %}
-              </div>
-            {% endif %}
-          {% endfor %}
+        <div class="flex justify-end pt-6 border-t border-gray-200">
+          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg">
+            Save Personal Info
+          </button>
         </div>
-      </div>
+      </form>
+    </div>
 
-      <!-- Preferences Tab -->
-      <div id="preferences-tab-content" class="tab-content hidden">
+    <!-- Dietary Tab -->
+    <div id="dietary-tab-content" class="tab-content hidden">
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="dietary">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-4">Taste Preferences</h3>
-          {% for field in form %}
-            {% if field.name == 'preferred_cuisines' %}
-              <div class="space-y-2">
-                <label class="block text-sm font-semibold text-gray-700">{{ field.label }}</label>
-                <div class="mt-1">{{ field }}</div>
-                {% if field.errors %}
-                  <p class="text-sm text-red-600 mt-1">{{ field.errors|first }}</p>
-                {% endif %}
-              </div>
-            {% endif %}
-          {% endfor %}
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Allergies</label>
+            <textarea name="allergies" rows="4" class="w-full border border-gray-300 rounded-md p-3 focus:ring-green-500 focus:border-green-500">{{ profile.allergies }}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Dietary Restrictions</label>
+            <textarea name="dietary_restrictions" rows="4" class="w-full border border-gray-300 rounded-md p-3 focus:ring-green-500 focus:border-green-500">{{ profile.dietary_restrictions }}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Disliked Ingredients</label>
+            <textarea name="disliked_ingredients" rows="4" class="w-full border border-gray-300 rounded-md p-3 focus:ring-green-500 focus:border-green-500">{{ profile.disliked_ingredients }}</textarea>
+          </div>
         </div>
-      </div>
 
-      <!-- User Goals Tab -->
-      <div id="goals-tab-content" class="tab-content hidden">
+        <div class="flex justify-end pt-6 border-t border-gray-200">
+          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg">
+            Save Dietary Info
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Preferences Tab -->
+    <div id="preferences-tab-content" class="tab-content hidden">
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="preferences">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-4">Set Your Goals</h3>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Preferred Cuisines</label>
+            <textarea name="preferred_cuisines" rows="4" class="w-full border border-gray-300 rounded-md p-3 focus:ring-green-500 focus:border-green-500">{{ profile.preferred_cuisines }}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Preferred Spice Level</label>
+            <select name="spice_level" class="w-full border border-gray-300 rounded-md p-3 focus:ring-green-500 focus:border-green-500">
+              <option value="">Select spice level</option>
+              <option value="mild" {% if profile.spice_level == 'mild' %}selected{% endif %}>Mild</option>
+              <option value="medium" {% if profile.spice_level == 'medium' %}selected{% endif %}>Medium</option>
+              <option value="spicy" {% if profile.spice_level == 'spicy' %}selected{% endif %}>Spicy</option>
+              <option value="very_spicy" {% if profile.spice_level == 'very_spicy' %}selected{% endif %}>Very Spicy</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-6 border-t border-gray-200">
+          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg">
+            Save Preferences
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Goals Tab -->
+    <div id="goals-tab-content" class="tab-content hidden">
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="goals">
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-400 p-6 space-y-6">
+          <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Goals</h3>
+
+          <!-- Render the Django form fields -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             {% for field in goal_form %}
-              <div class="space-y-2">
-                <label class="block text-sm font-semibold text-gray-700">{{ field.label }}</label>
-                <div class="mt-1">{{ field }}</div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">{{ field.label }}</label>
+                {{ field }}
                 {% if field.errors %}
                   <p class="text-sm text-red-600 mt-1">{{ field.errors|first }}</p>
                 {% endif %}
@@ -135,94 +149,41 @@
             {% endfor %}
           </div>
         </div>
-      </div>
 
-      <!-- Navigation and Submit Buttons -->
-      <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-        <div class="flex space-x-3">
-          <button type="button" id="prev-tab" class="hidden inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-            Previous
-          </button>
-          <button type="button" id="next-tab" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200">
-            Next
-            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <div class="flex justify-end pt-6 border-t border-gray-200">
+          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg">
+            Save Goals
           </button>
         </div>
-
-        <div class="flex space-x-3">
-          <a href="" class="inline-flex items-center px-6 py-3 border border-gray-300 rounded-lg text-base font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200 shadow-sm">Cancel</a>
-          <button type="submit" class="inline-flex items-center px-8 py-3 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-gray-600 font-semibold hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 shadow-lg">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            Create Profile
-          </button>
-        </div>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const tabs = ['personal', 'dietary', 'preferences', 'goals'];
-  let currentTab = 0;
-
   const tabButtons = document.querySelectorAll('.tab-button');
   const tabContents = document.querySelectorAll('.tab-content');
-  const prevButton = document.getElementById('prev-tab');
-  const nextButton = document.getElementById('next-tab');
 
-  function showTab(index) {
-    tabContents.forEach(content => content.classList.add('hidden'));
-    tabContents.forEach(content => content.classList.remove('active'));
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const target = this.dataset.tab;
 
-    tabButtons.forEach(button => {
-      button.classList.remove('border-green-500', 'text-green-600');
-      button.classList.add('border-transparent', 'text-gray-500');
+      // Remove active class from all buttons and hide all contents
+      tabButtons.forEach(b => b.classList.remove('border-green-500', 'text-green-600'));
+      tabContents.forEach(c => {
+        c.classList.add('hidden');
+        c.classList.remove('active');
+      });
+
+      // Activate the clicked button and corresponding tab content
+      this.classList.add('border-green-500', 'text-green-600');
+      const activeContent = document.getElementById(`${target}-tab-content`);
+      activeContent.classList.remove('hidden');
+      activeContent.classList.add('active');
     });
-
-    tabContents[index].classList.remove('hidden');
-    tabContents[index].classList.add('active');
-
-    tabButtons[index].classList.remove('border-transparent', 'text-gray-500');
-    tabButtons[index].classList.add('border-green-500', 'text-green-600');
-
-    prevButton.classList.toggle('hidden', index === 0);
-    nextButton.classList.toggle('hidden', index === tabs.length - 1);
-
-    currentTab = index;
-  }
-
-  tabButtons.forEach((button, index) => button.addEventListener('click', () => showTab(index)));
-  nextButton.addEventListener('click', () => { if (currentTab < tabs.length - 1) showTab(currentTab + 1); });
-  prevButton.addEventListener('click', () => { if (currentTab > 0) showTab(currentTab - 1); });
-
-  const fileInput = document.querySelector('input[type="file"][name="profile_image"]');
-  const preview = document.getElementById('profile-preview');
-  if (fileInput && preview) {
-    fileInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) { preview.src = evt.target.result; };
-        reader.readAsDataURL(file);
-      }
-    });
-  }
-
-  showTab(0);
+  });
 });
 </script>
 
-<style>
-/* Same form styling as before */
-input, select, textarea { width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; background-color: #fff; font-size: 14px; color: #1f2937; transition: all 0.3s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-height:48px; }
-textarea { min-height:100px; resize:vertical; }
-input[type="file"] { width:100%; padding:10px; border:2px dashed #d1d5db; border-radius:8px; background-color:#f8fafc; color:#6b7280; cursor:pointer; transition:all 0.3s ease; font-size:14px; }
-input[type="file"]:hover { border-color:#10b981; background-color:#f0fdf4; }
-select { background-image:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e"); background-position:right 12px center; background-repeat:no-repeat; background-size:16px; padding-right:40px; appearance:none; }
-.tab-content { transition: all 0.3s ease; }
-.tab-content.active { display:block; }
-.tab-content.hidden { display:none; }
-</style>
-{% endblock content %}
+{% endblock %}
