@@ -38,7 +38,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div class="col-span-1 flex flex-col items-center">
             <div class="w-40 h-40 bg-gray-100 rounded-xl overflow-hidden border border-gray-300 flex items-center justify-center shadow-inner mb-4">
-              <img id="profile-preview" src="{% if profile.profile_image %}{{ profile.profile_image.url }}{% else %}{% static 'profile_images/default_profile_image.png' %}{% endif %}" class="object-cover w-full h-full">
+              <img id="profile-preview" src="{% if profile.profile_image %}{{ profile.profile_image }}{% else %}{% static 'profile_images/default_profile_image.png' %}{% endif %}" class="object-cover w-full h-full">
             </div>
             <label class="w-full">
               <span class="block text-sm font-semibold text-gray-700 text-center mb-2">Profile Image</span>
