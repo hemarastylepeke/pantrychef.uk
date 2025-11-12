@@ -41,7 +41,7 @@
             {% csrf_token %}
             
             <!-- Basic Information Section -->
-            <div class="space-y-6 p-4 border border-gray-100 rounded-lg bg-gray-50">
+            <div class="space-y-6 p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
                 <div class="flex items-center">
                     <div class="w-1.5 h-6 bg-green-500 rounded-full mr-3"></div>
                     <h2 class="text-lg font-semibold text-gray-900">Basic Information</h2>
@@ -72,8 +72,10 @@
                     </label>
                     <div class="relative">
                         {{ form.category }}
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <i class="fas fa-tag text-gray-400"></i>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 mt-7">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
                         </div>
                     </div>
                     {% if form.category.errors %}
@@ -84,7 +86,7 @@
                 </div>
 
                 <!-- Quantity and Unit Row -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Quantity <span class="text-red-500">*</span>
@@ -107,19 +109,19 @@
                             {{ form.unit.errors }}
                         </div>
                         {% endif %}
-                        <p class="text-xs text-gray-500 mt-1">Examples: g, kg, ml, l, pieces, cups, tbsp, tsp</p>
+                        <p class="text-xs text-gray-500 mt-2">Examples: g, kg, ml, l, pieces, cups, tbsp, tsp</p>
                     </div>
                 </div>
             </div>
 
             <!-- Date Information Section -->
-            <div class="space-y-6 p-4 border border-gray-100 rounded-lg bg-gray-50">
+            <div class="space-y-6 p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
                 <div class="flex items-center">
                     <div class="w-1.5 h-6 bg-blue-500 rounded-full mr-3"></div>
                     <h2 class="text-lg font-semibold text-gray-900">Date Information</h2>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Purchase Date <span class="text-red-500">*</span>
@@ -157,7 +159,7 @@
             </div>
 
             <!-- Nutritional Information Section -->
-            <div class="space-y-6 p-4 border border-gray-100 rounded-lg bg-gray-50">
+            <div class="space-y-6 p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
                 <div class="flex items-center">
                     <div class="w-1.5 h-6 bg-purple-500 rounded-full mr-3"></div>
                     <h2 class="text-lg font-semibold text-gray-900">Nutritional Information (per 100g)</h2>
@@ -228,14 +230,14 @@
             </div>
 
             <!-- Additional Information Section -->
-            <div class="space-y-6 p-4 border border-gray-100 rounded-lg bg-gray-50">
+            <div class="space-y-6 p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
                 <div class="flex items-center">
                     <div class="w-1.5 h-6 bg-amber-500 rounded-full mr-3"></div>
                     <h2 class="text-lg font-semibold text-gray-900">Additional Information</h2>
                 </div>
                 
                 <!-- Price Field -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Price (optional)
@@ -285,7 +287,7 @@
                 </div>
 
                 <!-- Image Upload Fields -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Product Image (optional)
@@ -354,7 +356,7 @@
     </div>
 
     <!-- Quick Tips -->
-    <div class="mt-8 bg-blue-50 rounded-lg p-4 border border-blue-200">
+    <div class="mt-8 bg-blue-50 rounded-lg p-6 border border-blue-200">
         <div class="flex items-start">
             <i class="fas fa-lightbulb text-blue-500 mt-1 mr-3"></i>
             <div>
@@ -386,6 +388,18 @@ input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: #10b981;
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Custom select dropdown styling */
+select {
+    appearance: none;
+    background-image: none;
+    padding-right: 2.5rem;
+}
+
+/* Remove any inline background images from Django form */
+select {
+    background-image: none !important;
 }
 
 /* File upload styling */
@@ -432,6 +446,31 @@ input:focus, select:focus, textarea:focus {
 /* Nutritional info input styling */
 input[type="number"] {
     text-align: center;
+}
+
+/* Section spacing improvements */
+.space-y-8 > * + * {
+    margin-top: 2rem;
+}
+
+.space-y-6 > * + * {
+    margin-top: 1.5rem;
+}
+
+/* Grid gap improvements */
+.gap-6 > * {
+    margin: 0;
+}
+
+.gap-4 > * {
+    margin: 0;
+}
+
+/* Fix dropdown arrow positioning */
+.relative .absolute {
+    top: 50%;
+    transform: translateY(-50%);
+    margin-top: 0.75rem;
 }
 </style>
 
