@@ -14,7 +14,6 @@ urlpatterns = [
 
 
 
-
 # urlpatterns = [
 #     path('accounts/login/', views.login_view, name='account_login'),
 #     path('accounts/signup/', views.signup_view, name='account_signup'),
