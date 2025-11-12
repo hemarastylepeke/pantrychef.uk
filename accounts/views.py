@@ -83,7 +83,18 @@ def edit_profile_view(request):
         return redirect('create_profile')
 
     # Get or create goal record linked to the profile
-    user_goal, created = UserGoal.objects.get_or_create(user_profile=profile, active=True)
+    user_goal, created = UserGoal.objects.get_or_create(
+        user_profile=profile, 
+        defaults={
+            'goal_type': 'maintain_weight',
+            'priority': 1,
+            'active': True
+        }
+    )
+
+    # Initialize forms at the beginning so they're always available
+    profile_form = UserProfileForm(instance=profile)
+    goal_form = UserGoalForm(instance=user_goal)
 
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
@@ -119,15 +130,11 @@ def edit_profile_view(request):
                 goal.user_profile = profile
                 goal.save()
                 messages.success(request, 'Goals updated successfully!')
-                return redirect('edit_profile')
+                return redirect('profile_page')
             else:
                 messages.error(request, 'Please correct the errors in the goals form.')
 
-    else:
-        # Initialize forms for GET request
-        profile_form = UserProfileForm(instance=profile)
-        goal_form = UserGoalForm(instance=user_goal)
-
+    # Context is always available with both forms
     context = {
         'profile': profile,
         'profile_form': profile_form,

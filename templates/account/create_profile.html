@@ -37,23 +37,62 @@
         <input type="hidden" name="form_type" value="profile">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div class="col-span-1 flex flex-col items-center">
-            <div class="w-40 h-40 bg-gray-100 rounded-xl overflow-hidden border border-gray-300 flex items-center justify-center shadow-inner mb-4">
-              <img id="profile-preview" src="{% if profile.profile_image %}{{ profile.profile_image }}{% else %}{% static 'profile_images/default_profile_image.png' %}{% endif %}" class="object-cover w-full h-full">
+            <div class="w-40 h-40 bg-gray-100 rounded-xl overflow-hidden border-2 border-dashed border-gray-300 flex items-center justify-center shadow-inner mb-4 relative">
+              <!-- Profile Image Preview -->
+              {% if profile.profile_image and profile.profile_image.url %}
+                <img id="profile-preview" src="{{ profile.profile_image.url }}" alt="Profile" class="object-cover w-full h-full">
+              {% else %}
+                <img id="profile-preview" src="{% static 'images/default-profile.png' %}" alt="Default Profile" class="object-cover w-full h-full">
+              {% endif %}
+              
+              <!-- Loading Overlay -->
+              <div id="image-loading" class="hidden absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div class="text-white text-sm">Loading...</div>
+              </div>
             </div>
-            <label class="w-full">
+
+            <!-- Custom File Input -->
+            <label class="w-full cursor-pointer">
               <span class="block text-sm font-semibold text-gray-700 text-center mb-2">Profile Image</span>
-              {{ profile_form.profile_image }}
+              <div class="relative">
+                <!-- Hidden actual file input -->
+                {{ profile_form.profile_image }}
+                <!-- Custom styled file input -->
+                <div class="file-input-custom w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg bg-white text-gray-500 hover:border-green-500 hover:bg-green-50 transition-all duration-200 text-center cursor-pointer">
+                  <i class="fas fa-cloud-upload-alt mb-1"></i>
+                  <span class="block text-sm font-medium">Click to upload</span>
+                  <span class="text-xs">PNG, JPG up to 2MB</span>
+                </div>
+              </div>
+              {% if profile_form.profile_image.errors %}
+                <p class="text-sm text-red-600 mt-2 text-center">{{ profile_form.profile_image.errors|first }}</p>
+              {% endif %}
             </label>
+
+            <!-- Clear Image Checkbox (only show if image exists) -->
+            {% if profile.profile_image and profile.profile_image.url %}
+            <div class="mt-3 flex items-center">
+              <input type="checkbox" name="profile_image-clear" id="profile_image-clear_id" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+              <label for="profile_image-clear_id" class="ml-2 text-sm text-gray-600">Remove current image</label>
+            </div>
+            {% endif %}
           </div>
 
           <div class="col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
             {% for field in profile_form %}
               {% if field.name != 'profile_image' %}
-                <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">{{ field.label }}</label>
-                  {{ field }}
+                <div class="space-y-2">
+                  <label class="block text-sm font-semibold text-gray-700 mb-2" for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                  </label>
+                  <div class="relative">
+                    {{ field }}
+                  </div>
                   {% if field.errors %}
                     <p class="text-sm text-red-600 mt-1">{{ field.errors|first }}</p>
+                  {% endif %}
+                  {% if field.help_text %}
+                    <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
                   {% endif %}
                 </div>
               {% endif %}
@@ -62,7 +101,8 @@
         </div>
 
         <div class="flex justify-end pt-6 border-t border-gray-200">
-          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg">
+          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg transform hover:scale-105">
+            <i class="fas fa-save mr-2"></i>
             Save Personal Info
           </button>
         </div>
@@ -75,22 +115,23 @@
         {% csrf_token %}
         <input type="hidden" name="form_type" value="dietary">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-          <div>
+          <div class="space-y-2">
             <label class="block text-sm font-semibold text-gray-700 mb-2">Allergies</label>
-            <textarea name="allergies" rows="4" class="w-full border border-gray-300 rounded-md p-3 focus:ring-green-500 focus:border-green-500">{{ profile.allergies }}</textarea>
+            <textarea name="allergies" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200 resize-vertical" placeholder="List any food allergies separated by commas...">{{ profile.allergies|default:'' }}</textarea>
           </div>
-          <div>
+          <div class="space-y-2">
             <label class="block text-sm font-semibold text-gray-700 mb-2">Dietary Restrictions</label>
-            <textarea name="dietary_restrictions" rows="4" class="w-full border border-gray-300 rounded-md p-3 focus:ring-green-500 focus:border-green-500">{{ profile.dietary_restrictions }}</textarea>
+            <textarea name="dietary_restrictions" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200 resize-vertical" placeholder="List any dietary restrictions or preferences...">{{ profile.dietary_restrictions|default:'' }}</textarea>
           </div>
-          <div>
+          <div class="space-y-2">
             <label class="block text-sm font-semibold text-gray-700 mb-2">Disliked Ingredients</label>
-            <textarea name="disliked_ingredients" rows="4" class="w-full border border-gray-300 rounded-md p-3 focus:ring-green-500 focus:border-green-500">{{ profile.disliked_ingredients }}</textarea>
+            <textarea name="disliked_ingredients" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200 resize-vertical" placeholder="List ingredients you don't like...">{{ profile.disliked_ingredients|default:'' }}</textarea>
           </div>
         </div>
 
         <div class="flex justify-end pt-6 border-t border-gray-200">
-          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg">
+          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg transform hover:scale-105">
+            <i class="fas fa-save mr-2"></i>
             Save Dietary Info
           </button>
         </div>
@@ -103,13 +144,13 @@
         {% csrf_token %}
         <input type="hidden" name="form_type" value="preferences">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-          <div>
+          <div class="space-y-2">
             <label class="block text-sm font-semibold text-gray-700 mb-2">Preferred Cuisines</label>
-            <textarea name="preferred_cuisines" rows="4" class="w-full border border-gray-300 rounded-md p-3 focus:ring-green-500 focus:border-green-500">{{ profile.preferred_cuisines }}</textarea>
+            <textarea name="preferred_cuisines" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200 resize-vertical" placeholder="List your favorite cuisines...">{{ profile.preferred_cuisines|default:'' }}</textarea>
           </div>
-          <div>
+          <div class="space-y-2">
             <label class="block text-sm font-semibold text-gray-700 mb-2">Preferred Spice Level</label>
-            <select name="spice_level" class="w-full border border-gray-300 rounded-md p-3 focus:ring-green-500 focus:border-green-500">
+            <select name="spice_level" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200">
               <option value="">Select spice level</option>
               <option value="mild" {% if profile.spice_level == 'mild' %}selected{% endif %}>Mild</option>
               <option value="medium" {% if profile.spice_level == 'medium' %}selected{% endif %}>Medium</option>
@@ -120,7 +161,8 @@
         </div>
 
         <div class="flex justify-end pt-6 border-t border-gray-200">
-          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg">
+          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg transform hover:scale-105">
+            <i class="fas fa-save mr-2"></i>
             Save Preferences
           </button>
         </div>
@@ -133,17 +175,23 @@
         {% csrf_token %}
         <input type="hidden" name="form_type" value="goals">
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-400 p-6 space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
           <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Goals</h3>
 
-          <!-- Render the Django form fields -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             {% for field in goal_form %}
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">{{ field.label }}</label>
-                {{ field }}
+              <div class="space-y-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-2" for="{{ field.id_for_label }}">
+                  {{ field.label }}
+                </label>
+                <div class="relative">
+                  {{ field }}
+                </div>
                 {% if field.errors %}
                   <p class="text-sm text-red-600 mt-1">{{ field.errors|first }}</p>
+                {% endif %}
+                {% if field.help_text %}
+                  <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
                 {% endif %}
               </div>
             {% endfor %}
@@ -151,7 +199,8 @@
         </div>
 
         <div class="flex justify-end pt-6 border-t border-gray-200">
-          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg">
+          <button type="submit" class="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg transform hover:scale-105">
+            <i class="fas fa-save mr-2"></i>
             Save Goals
           </button>
         </div>
@@ -160,27 +209,177 @@
   </div>
 </div>
 
+<style>
+/* Custom file input styling */
+input[type="file"] {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-input-custom {
+  transition: all 0.3s ease;
+}
+
+.file-input-custom:hover {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+/* Form input styling */
+input, select, textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: white;
+  font-size: 14px;
+  color: #1f2937;
+  transition: all 0.3s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Select dropdown styling */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+/* Tab content transitions */
+.tab-content {
+  transition: all 0.3s ease;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.tab-content.hidden {
+  display: none;
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const tabButtons = document.querySelectorAll('.tab-button');
   const tabContents = document.querySelectorAll('.tab-content');
 
+  // Tab switching functionality
   tabButtons.forEach(btn => {
     btn.addEventListener('click', function() {
       const target = this.dataset.tab;
 
       // Remove active class from all buttons and hide all contents
-      tabButtons.forEach(b => b.classList.remove('border-green-500', 'text-green-600'));
+      tabButtons.forEach(b => {
+        b.classList.remove('border-green-500', 'text-green-600');
+        b.classList.add('border-transparent', 'text-gray-500');
+      });
+      
       tabContents.forEach(c => {
         c.classList.add('hidden');
         c.classList.remove('active');
       });
 
       // Activate the clicked button and corresponding tab content
+      this.classList.remove('border-transparent', 'text-gray-500');
       this.classList.add('border-green-500', 'text-green-600');
+      
       const activeContent = document.getElementById(`${target}-tab-content`);
       activeContent.classList.remove('hidden');
       activeContent.classList.add('active');
+    });
+  });
+
+  // Enhanced image preview functionality
+  const fileInput = document.querySelector('input[type="file"][name="profile_image"]');
+  const preview = document.getElementById('profile-preview');
+  const clearCheckbox = document.getElementById('profile_image-clear_id');
+  const loadingOverlay = document.getElementById('image-loading');
+  const customFileInput = document.querySelector('.file-input-custom');
+  
+  if (fileInput && preview) {
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        // Show loading
+        if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+        
+        // Validate file size (2MB max)
+        if (file.size > 2 * 1024 * 1024) {
+          alert('File size must be less than 2MB');
+          this.value = '';
+          if (loadingOverlay) loadingOverlay.classList.add('hidden');
+          return;
+        }
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          alert('Please select an image file');
+          this.value = '';
+          if (loadingOverlay) loadingOverlay.classList.add('hidden');
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(evt) { 
+          preview.src = evt.target.result; 
+          // Hide loading
+          if (loadingOverlay) loadingOverlay.classList.add('hidden');
+          // Update custom file input text
+          if (customFileInput) {
+            customFileInput.innerHTML = `
+              <i class="fas fa-check-circle text-green-500 mb-1"></i>
+              <span class="block text-sm font-medium text-green-600">Image selected</span>
+              <span class="text-xs text-green-500">${file.name}</span>
+            `;
+          }
+          // Uncheck clear checkbox when new image is selected
+          if (clearCheckbox) clearCheckbox.checked = false;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Handle clear checkbox
+  if (clearCheckbox) {
+    clearCheckbox.addEventListener('change', function() {
+      if (this.checked && preview) {
+        preview.src = "{% static 'images/default-profile.png' %}";
+        if (fileInput) fileInput.value = '';
+        if (customFileInput) {
+          customFileInput.innerHTML = `
+            <i class="fas fa-cloud-upload-alt mb-1"></i>
+            <span class="block text-sm font-medium">Click to upload</span>
+            <span class="text-xs">PNG, JPG up to 2MB</span>
+          `;
+        }
+      }
+    });
+  }
+
+  // Add focus styles to all form elements
+  const formElements = document.querySelectorAll('input, select, textarea');
+  formElements.forEach(element => {
+    element.addEventListener('focus', function() {
+      this.parentElement.classList.add('ring-2', 'ring-green-200');
+    });
+    
+    element.addEventListener('blur', function() {
+      this.parentElement.classList.remove('ring-2', 'ring-green-200');
     });
   });
 });
