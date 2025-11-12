@@ -1,21 +1,20 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Pantry Dashboard - PantryCheff{% endblock %}
+{% block title %}Pantry Dashboard - PantryChef{% endblock %}
 
 {% block content %}
 <div class="flex h-screen bg-gray-50">
     <!-- Sidebar -->
     <div class="w-64 bg-white shadow-lg flex flex-col">
         <!-- Logo -->
-        <div class="p-6 border-b">
-            <h1 class="text-2xl font-bold text-primary">Pantry<span class="text-secondary">Cheff</span></h1>
-            <p class="text-sm text-gray-500 mt-1">Dashboard</p>
-        </div>
+        <!-- <div class="p-6">
+            <h1 class="text-2xl font-bold text-green-400">Pantry<span class="text-secondary">Chef</span></h1>
+        </div> -->
 
         <!-- Navigation -->
         <div class="flex-1 p-4">
-            <ul class="space-y-2">
+            <ul class="space-y-2 mt-2">
                 <li>
                     <a href="{% url 'pantry_dashboard' %}" class="flex items-center p-3 text-gray-700 rounded-lg bg-green-50 border-l-4 border-primary">
                         <i class="fas fa-home mr-3 text-primary"></i>
@@ -81,7 +80,7 @@
 
     <!-- Main Content -->
     <div class="flex-1 overflow-auto">
-        <!-- Header -->
+        <!-- Header
         <header class="bg-white shadow-sm p-4">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-gray-800">Dashboard Overview</h2>
@@ -98,7 +97,7 @@
                     </a>
                 </div>
             </div>
-        </header>
+        </header> -->
 
         <!-- Dashboard Content -->
         <div class="p-6">
@@ -199,7 +198,7 @@
                                     </p>
                                 </div>
                                 <div class="flex space-x-2">
-                                    <a href="{% url 'create_recipe' %}" class="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-green-600">Use Now</a>
+                                    <a href="{% url 'create_recipe' %}" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-800">Use Now</a>
                                     <a href="{% url 'edit_pantry_item' item.id %}" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">Edit</a>
                                 </div>
                             </div>
@@ -245,7 +244,7 @@
                                     <i class="fas fa-shopping-cart text-blue-500"></i>
                                 </div>
                                 <div>
-                                    <h4 class="font-medium">Welcome to PantryCheff!</h4>
+                                    <h4 class="font-medium">Welcome to PantryChef!</h4>
                                     <p class="text-gray-500 text-sm">Create your first shopping list to get started</p>
                                 </div>
                             </div>
@@ -260,11 +259,11 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
                         <div class="grid grid-cols-2 gap-3">
-                            <a href="{% url 'create_shopping_list' %}" class="bg-primary text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-green-700 transition">
+                            <a href="{% url 'create_shopping_list' %}" class="bg-green-600 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-green-700 transition">
                                 <i class="fas fa-robot text-xl mb-2"></i>
                                 <span class="text-sm">AI Shopping</span>
                             </a>
-                            <a href="{% url 'create_recipe' %}" class="bg-blue-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-blue-600 transition">
+                            <a href="{% url 'create_recipe' %}" class="bg-green-600 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-green-800 transition">
                                 <i class="fas fa-magic text-xl mb-2"></i>
                                 <span class="text-sm">AI Recipe</span>
                             </a>
@@ -272,7 +271,7 @@
                                 <i class="fas fa-shopping-basket text-xl mb-2"></i>
                                 <span class="text-sm">View Pantry</span>
                             </a>
-                            <a href="{% url 'budget_list' %}" class="bg-orange-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-orange-600 transition">
+                            <a href="{% url 'budget_list' %}" class="bg-purple-500 text-white p-3 rounded-lg flex flex-col items-center justify-center hover:bg-purple-600 transition">
                                 <i class="fas fa-wallet text-xl mb-2"></i>
                                 <span class="text-sm">Budget</span>
                             </a>
